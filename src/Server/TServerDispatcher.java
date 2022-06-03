@@ -40,7 +40,7 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
         watcherContact = new TWatcherContact(watcher,port,this);
     }
     public void run() { // run socket thread creation indefinitely
-        watcherContact.run();
+        watcherContact.start();
         try {
             serverSocket = new ServerSocket(port);
             while (true) {
