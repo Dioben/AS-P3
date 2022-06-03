@@ -54,6 +54,7 @@ public class GUI extends Thread{
                 selfPortSpinner,
                 monitorPortSpinner
         }) {
+            spinner.setValue(8000);
             ((DefaultFormatter) ((JFormattedTextField) spinner.getEditor().getComponent(0)).getFormatter()).setCommitsOnValidEdit(true);
             spinner.addChangeListener(e -> {
                 int port = (int) spinner.getValue();
@@ -77,6 +78,7 @@ public class GUI extends Thread{
         try {
             while (true) {
                 update = updates.take();
+                requestTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
                 boolean newRequest = true;
                 for (int i = 0; i < requestTableModel.getRowCount(); i++) {
                     if (requestTableModel.getValueAt(i, 0).equals(update[0])) {
@@ -123,6 +125,7 @@ public class GUI extends Thread{
             serverDispatcher = null;
             JOptionPane.showMessageDialog(null, "Invalid self port.", "Error", JOptionPane.ERROR_MESSAGE);
         } else {
+            frame.setTitle(TITLE + " (" + selfPortSpinner.getValue() + ")");
             ((CardLayout) cardPanel.getLayout()).next(cardPanel);
         }
     }
