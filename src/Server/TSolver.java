@@ -19,30 +19,9 @@ public class TSolver extends Thread{
     public void run() {
 
         try {
-            Socket res = new Socket("localhost",request.getReturnPort()); //TODO: MAYBE GENERIC LH
-            PrintWriter out = new PrintWriter(res.getOutputStream());
-            if (request.getPrecision()>13){
-                out.println(String.format("%d|%d|%d| 03 |%d|00|%d", request.getReturnPort(),
-                                                                    request.getRequestID(),
-                                                                    ID,
-                                                                    request.getPrecision(),
-                                                                    request.getDeadline())  );
-            }
-            else{
-                Thread.sleep(5000* request.getPrecision());
+            Thread.sleep(5000* request.getPrecision());
+        } catch (InterruptedException e) {}
+        parent.onRequestCompletion(request,PI.substring(0,2+ request.getPrecision()));
 
-                out.println(String.format("%d|%d|%d| 03 |%d|%s|%d",
-                                                                    request.getReturnPort(),
-                                                                    request.getRequestID(),
-                                                                    ID,
-                                                                    request.getPrecision(),PI.substring(0,2+ request.getPrecision()),
-                                                                    request.getDeadline())  );
-
-            }
-            parent.onRequestCompletion(request);
-
-        } catch (InterruptedException | IOException e) {
-
-        }
     }
 }

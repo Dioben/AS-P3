@@ -32,10 +32,26 @@ public class TWatcherContact extends Thread{
         }
     }
 
-    public void reportToMonitor() {
+    private void reportToMonitor() {
         rl.lock();
         int[] info = provider.getStatus();
         String report = String.format("S|%s|%d|%d",ID,info[0],info[1]);
+        out.println(report);
+        rl.unlock();
+    }
+
+    public void reportSuccessToMonitor(QueuedRequest request) {
+        rl.lock();
+        int[] info = provider.getStatus();
+        String report = String.format("SD|%s|%d|%d|%d|%d",ID,info[0],info[1],request.getReturnPort(),request.getRequestID());
+        out.println(report);
+        rl.unlock();
+    }
+
+    public void reportRejectionToMonitor(QueuedRequest request) {
+        rl.lock();
+        int[] info = provider.getStatus();
+        String report = String.format("SR|%s|%d|%d|%d|%d",ID,info[0],info[1],request.getReturnPort(),request.getRequestID());
         out.println(report);
         rl.unlock();
     }

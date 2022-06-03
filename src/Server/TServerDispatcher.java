@@ -1,7 +1,9 @@
 package Server;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -51,21 +53,25 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
     }
 
     public void registerNewRequest(QueuedRequest request){
+        if (request.getPrecision()>13){
+            reportRefusal(request);
+            return;
+        }
         rl.lock();
 
         if (threadsRunning<MAX_THREADS){
-            if (complexityLoad+request.getPrecision()>MAX_COMPLEXITY){
+            if (complexityLoad+request.getPrecision()<=MAX_COMPLEXITY){
                 threadsRunning++;
                 complexityLoad+=request.getPrecision();
                 new TSolver(request,this,port).start();
             }else{
                 refused++;
-                new TRejector(request,port).start();
+                reportRefusal(request);
             }
 
 
     }else if( waiting.size() <MAX_PENDING){
-            if (complexityLoad+request.getPrecision()>MAX_COMPLEXITY){
+            if (complexityLoad+request.getPrecision()<=MAX_COMPLEXITY){
                 //keep pending sorted
                 if (waiting.size()!=0 && waiting.get(0).getDeadline()>request.getDeadline()){
                     waiting.add(0,request);
@@ -76,15 +82,15 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
                 complexityLoad+=request.getPrecision();
             }else{
                 refused++;
-                new TRejector(request,port).start();
+                reportRefusal(request);
             }
         }
         else{ //one of the pending requests may be swapped out, keep complexity load maximum and scheduling policy in mind
-            for(int i = 0;i<2;i++){
+            for(int i = 0;i<MAX_PENDING;i++){
                 QueuedRequest queued = waiting.get(i);
                 if (request.getDeadline()>queued.getDeadline() &&  (request.getPrecision()+complexityLoad-queued.getPrecision() ) <=MAX_COMPLEXITY ){
-                    new TRejector(queued,port).start();
                     waiting.set(i, request);
+                    reportRefusal(queued);
                     break;
                 }
             }
@@ -93,7 +99,8 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
         rl.unlock();
     }
 
-    public void onRequestCompletion(QueuedRequest request){
+    public void onRequestCompletion(QueuedRequest request,String result){
+
         rl.lock();
         returned++;
         complexityLoad-=request.getPrecision();
@@ -105,7 +112,35 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
          threadsRunning--;
          rl.unlock();
         }
-        watcherContact.reportToMonitor();
+        reportResult(request,result);
+
+    }
+
+    private void reportResult(QueuedRequest request, String result){
+        try {
+            Socket res = new Socket("localhost",request.getReturnPort());
+            PrintWriter out = new PrintWriter(res.getOutputStream());
+            out.println(String.format("%d|%d|%d|02|%d|%d|%d", request.getReturnPort(),
+                    request.getRequestID(),
+                    this.port,
+                    request.getPrecision(),
+                    result,
+                    request.getDeadline())  );
+        } catch (IOException e) {}
+        watcherContact.reportSuccessToMonitor(request);
+    }
+
+    private void reportRefusal(QueuedRequest request){
+        try {
+            Socket res = new Socket("localhost",request.getReturnPort());
+            PrintWriter out = new PrintWriter(res.getOutputStream());
+            out.println(String.format("%d|%d|%d|03|%d|00|%d", request.getReturnPort(),
+                    request.getRequestID(),
+                    this.port,
+                    request.getPrecision(),
+                    request.getDeadline())  );
+        } catch (IOException e) {}
+        watcherContact.reportRejectionToMonitor(request);
     }
 
     @Override
