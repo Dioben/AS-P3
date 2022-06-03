@@ -32,22 +32,25 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
     private int returned = 0;
     private int refused = 0;
 
-    //private TGUI gui; TODO: INSERT UI CLASS LATER
+    private GUI gui;
 
-    public TServerDispatcher(int port, int watcher) {
+    public TServerDispatcher(int port, int watcher, GUI gui) {
+        this.gui = gui;
         this.port = port;
         rl = new ReentrantLock();
-        watcherContact = new TWatcherContact(watcher,port,this);
+        watcherContact = new TWatcherContact(watcher,port,this, gui);
+        watcherContact.start();
     }
     public void run() { // run socket thread creation indefinitely
-        watcherContact.run();
         try {
             serverSocket = new ServerSocket(port);
+            gui.setSelfPortValidity(true);
             while (true) {
                 new TCommsAssessor(serverSocket.accept(),this).start();
             }
         } catch (IOException e) {
             e.printStackTrace();
+            gui.setSelfPortValidity(false);
             watcherContact.interrupt();
         }
     }
@@ -59,6 +62,7 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
         }
         rl.lock();
 
+        gui.updateRequest(request.getRequestID(), request.getReturnPort(), request.getPrecision(), request.getDeadline(), "Pending", "");
         if (threadsRunning<MAX_THREADS){
             if (complexityLoad+request.getPrecision()<=MAX_COMPLEXITY){
                 threadsRunning++;
@@ -70,7 +74,7 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
             }
 
 
-    }else if( waiting.size() <MAX_PENDING){
+        }else if( waiting.size() <MAX_PENDING){
             if (complexityLoad+request.getPrecision()<=MAX_COMPLEXITY){
                 //keep pending sorted
                 if (waiting.size()!=0 && waiting.get(0).getDeadline()>request.getDeadline()){
@@ -117,6 +121,7 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
     }
 
     private void reportResult(QueuedRequest request, String result){
+        gui.updateRequest(request.getRequestID(), request.getReturnPort(), request.getPrecision(), request.getDeadline(), "Finished", result);
         try {
             Socket res = new Socket("localhost",request.getReturnPort());
             PrintWriter out = new PrintWriter(res.getOutputStream());
@@ -133,6 +138,7 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
     }
 
     private void reportRefusal(QueuedRequest request){
+        gui.updateRequest(request.getRequestID(), request.getReturnPort(), request.getPrecision(), request.getDeadline(), "Rejected", "");
         try {
             Socket res = new Socket("localhost",request.getReturnPort());
             PrintWriter out = new PrintWriter(res.getOutputStream());
