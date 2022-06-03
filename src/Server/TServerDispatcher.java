@@ -126,6 +126,8 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
                     request.getPrecision(),
                     result,
                     request.getDeadline())  );
+            out.close();
+            res.close();
         } catch (IOException e) {}
         watcherContact.reportSuccessToMonitor(request);
     }
@@ -139,6 +141,8 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
                     this.port,
                     request.getPrecision(),
                     request.getDeadline())  );
+            out.close();
+            res.close();
         } catch (IOException e) {}
         watcherContact.reportRejectionToMonitor(request);
     }
