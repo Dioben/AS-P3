@@ -1,6 +1,7 @@
-package Server;
+package Client;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
@@ -11,13 +12,12 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class GUI extends Thread{
 
-    private TServerDispatcher serverDispatcher;
     private final BlockingQueue<Object[]> updates = new LinkedBlockingQueue<>();
 
-    private static final String TITLE = "Server";
-    private static final int WINDOW_WIDTH = 512;
+    private static final String TITLE = "Client";
+    private static final int WINDOW_WIDTH = 768;
     private static final int WINDOW_HEIGHT = 256;
-    private static final int TABLE_WIDTH = WINDOW_WIDTH-16;
+    private static final int TABLE_WIDTH = 496;
     private static final int TABLE_HEIGHT = WINDOW_HEIGHT-32;
     private int PICellWidth = TABLE_WIDTH/6;
 
@@ -27,9 +27,13 @@ public class GUI extends Thread{
     private JScrollPane requestTableScrollPane;
     private JPanel cardPanel;
     private JSpinner selfPortSpinner;
-    private JSpinner monitorPortSpinner;
+    private JSpinner loadBalancerPortSpinner;
     private JButton continueButton;
     private JPanel portsPanel;
+    private JSpinner iterationsSpinner;
+    private JSpinner deadlineSpinner;
+    private JButton sendRequestButton;
+    private JPanel requestFormPanel;
     private DefaultTableModel requestTableModel;
 
     public GUI() {
@@ -46,25 +50,25 @@ public class GUI extends Thread{
         requestTableScrollPane.setMinimumSize(new Dimension(TABLE_WIDTH, TABLE_HEIGHT));
         requestTableScrollPane.setPreferredSize(new Dimension(TABLE_WIDTH, TABLE_HEIGHT));
 
+        requestFormPanel.setMinimumSize(new Dimension(WINDOW_WIDTH - TABLE_WIDTH - 28, TABLE_HEIGHT));
+        requestFormPanel.setBorder(new EmptyBorder(0, 16, 8, 8));
+
         for (JSpinner spinner : new JSpinner[] {
                 selfPortSpinner,
-                monitorPortSpinner
+                loadBalancerPortSpinner
         }) {
             spinner.setValue(8000);
-            ((DefaultFormatter) ((JFormattedTextField) spinner.getEditor().getComponent(0)).getFormatter()).setCommitsOnValidEdit(true);
-            spinner.addChangeListener(e -> {
-                int port = (int) spinner.getValue();
-                if (port > 65535) {
-                    spinner.setValue(65535);
-                } else if (port < 0) {
-                    spinner.setValue(0);
-                }
-            });
+            setSpinnerMinMax(spinner, 0, 65535);
         }
+        setSpinnerMinMax(iterationsSpinner, 0, 20);
+        setSpinnerMinMax(deadlineSpinner, 0, Integer.MAX_VALUE);
 
         continueButton.addActionListener(e -> {
-            if (serverDispatcher == null)
-                serverDispatcher = new TServerDispatcher((int) selfPortSpinner.getValue(), (int) monitorPortSpinner.getValue(), this);
+            // TODO
+        });
+
+        sendRequestButton.addActionListener(e -> {
+            // TODO
         });
     }
 
@@ -92,11 +96,11 @@ public class GUI extends Thread{
         }
     }
 
-    public void updateRequest(int requestId, int clientId, int iterations, int deadline, String status, String PI) {
+    public void updateRequest(int requestId, int serverId, int iterations, int deadline, String status, String PI) {
         try {
             updates.put(new Object[] {
                     requestId,
-                    clientId,
+                    serverId,
                     iterations,
                     deadline,
                     status,
@@ -107,18 +111,18 @@ public class GUI extends Thread{
         }
     }
 
-    public void setMonitorPortValidity(boolean valid) {
+    public void setLoadBalancerPortValidity(boolean valid) {
         if (!valid) {
-            serverDispatcher = null;
+            // TODO
             JOptionPane.showMessageDialog(null, "Connection to monitor port failed.", "Error", JOptionPane.ERROR_MESSAGE);
         } else {
-            serverDispatcher.start();
+            // TODO
         }
     }
 
     public void setSelfPortValidity(boolean valid) {
         if (!valid) {
-            serverDispatcher = null;
+            // TODO
             JOptionPane.showMessageDialog(null, "Invalid self port.", "Error", JOptionPane.ERROR_MESSAGE);
         } else {
             frame.setTitle(TITLE + " (" + selfPortSpinner.getValue() + ")");
@@ -153,7 +157,7 @@ public class GUI extends Thread{
                 return component;
             }
         };
-        requestTableModel = new DefaultTableModel(new String[] {"Request", "Client", "Iterations", "Deadline", "Status", "PI"}, 0) {
+        requestTableModel = new DefaultTableModel(new String[] {"Request", "Server", "Iterations", "Deadline", "Status", "PI"}, 0) {
             @Override
             public Class getColumnClass(int column) {
                 return switch (column) {
@@ -185,5 +189,17 @@ public class GUI extends Thread{
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private static void setSpinnerMinMax(JSpinner spinner, int min, int max) {
+        ((DefaultFormatter) ((JFormattedTextField) spinner.getEditor().getComponent(0)).getFormatter()).setCommitsOnValidEdit(true);
+        spinner.addChangeListener(e -> {
+            int port = (int) spinner.getValue();
+            if (port > max) {
+                spinner.setValue(max);
+            } else if (port < min) {
+                spinner.setValue(min);
+            }
+        });
     }
 }
