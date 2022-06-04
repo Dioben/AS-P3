@@ -6,7 +6,7 @@ public interface ILoadBalancerHandler {
     void removeLoadBalancer(int port);
 
     //TODO: BETTER PARAMS FOR THESE
-    String notifyHandling(String request);
+    String notifyHandling(int client, int request,int iter, int deadline);
 
-    void notifyDispatched(String request);
+    void notifyDispatched(int request ,int server);
 }

@@ -8,6 +8,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 
 public class TBackendMonitor extends  Thread{
+    private static final int SOCKET_TIMEOUT = 11000;
     private final Socket comms;
     private BufferedReader in;
     private PrintWriter out;
@@ -22,7 +23,7 @@ public class TBackendMonitor extends  Thread{
     @Override
     public void run() {
         try {
-            comms.setSoTimeout(11000); //set this socket to time out if nothing is said in 11 second window
+            comms.setSoTimeout(SOCKET_TIMEOUT); //set this socket to time out if nothing is said in 11 second window
             in = new BufferedReader(new InputStreamReader(comms.getInputStream()));
             out = new PrintWriter(comms.getOutputStream());
             String inputLine = in.readLine();
@@ -34,8 +35,7 @@ public class TBackendMonitor extends  Thread{
             }
         } catch (IOException e) {}
     }
-
-    //TODO
+    //TODO: MAYBE MOVE THESE HANDLE/PARSE INTO CUSTOM OBJECTS
     private void handleServer(IServerHandler handler, String request){
         int port = Integer.parseInt(request.split("\\|")[1]);
         parseServerInput(handler,request);
@@ -47,10 +47,20 @@ public class TBackendMonitor extends  Thread{
             }
         }
     }
-    //TODO
+
     private void handleLoadBalancer(ILoadBalancerHandler handler, String request){
         isLoadBalancer = true;
-        //handler.registerLoadBalancer();
+        if (!request.startsWith("LB|")) //basic keepalive rather than advanced message
+            throw new RuntimeException("Load Balancer is asking for information before primary");
+        int port = Integer.parseInt(request.split("|")[1]);
+        handler.registerLoadBalancer(port,this);
+        while (true){
+            try {
+                parseLoadBalancerInput(handler,in.readLine());
+            } catch (IOException e) {
+                handler.removeLoadBalancer(port);
+            }
+        }
     }
 
     //TODO
@@ -68,8 +78,23 @@ public class TBackendMonitor extends  Thread{
         }
 
     }
-    //TODO
-    private void parseLoadBalancerInput(String line){}
+
+    private void parseLoadBalancerInput(ILoadBalancerHandler handler,String line){
+        String[] request = line.split("\\|");
+        if (request[0].equals("LBIR")){
+            int client = Integer.parseInt(request[2]);
+            int reqID = Integer.parseInt(request[3]);
+            int iter = Integer.parseInt(request[6]);
+            int deadline= Integer.parseInt(request[8]);
+            String status = handler.notifyHandling(client,reqID,iter,deadline);
+            out.println(status);
+        }
+        else if (request[0].equals("LBD")){
+            int reqID = Integer.parseInt(request[2]);
+            int serverID = Integer.parseInt(request[3]);
+            handler.notifyDispatched(reqID,serverID);
+        }
+    }
 
     public void shiftToPrimaryLoadBalancer(String catchUp){
         if (!isLoadBalancer)

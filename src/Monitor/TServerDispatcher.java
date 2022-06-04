@@ -89,9 +89,9 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
             hld.getMngThread().shiftToPrimaryLoadBalancer("TAKEOVER "+loadBalancerPrimaryPort); //long operation, avoid doing it in lock
     }
 
-    //TODO: BETTER PARAMS FOR THESE
+    //TODO: UI STUFF
     @Override
-    public String notifyHandling(String request){
+    public String notifyHandling(int client, int reqID, int iter, int deadline){
         String content = "";
         rl.lock();
         for (int port:servers.keySet())
@@ -101,9 +101,9 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
         rl.unlock();
         return content.substring(0,content.length()-1); //cut out last |
     }
-    //TODO
+    //TODO: UI STUFF
     @Override
-    public void notifyDispatched(String request){
+    public void notifyDispatched(int request, int port){
 
     }
     //TODO: UI STUFF

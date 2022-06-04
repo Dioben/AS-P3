@@ -37,7 +37,7 @@ public class TWatcherContact extends Thread implements IMonitorInfoContact {
 
     private void reportToMonitor() {
         rl.lock();
-        String report = String.format("LB|%d",ID);
+        String report = String.format("LB|%s",ID);
         out.println(report);
         rl.unlock();
     }
@@ -47,7 +47,7 @@ public class TWatcherContact extends Thread implements IMonitorInfoContact {
             throw new RuntimeException("Should not be fetching info while not primary");
         }
         rl.lock();
-        String report = String.format("LBIR|%d|%s",ID,request);
+        String report = String.format("LBIR|%s|%s",ID,request);
         out.println(report);
 
         String content = null;
