@@ -106,14 +106,14 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
     public void notifyDispatched(String request){
 
     }
-    //TODO
+    //TODO: UI STUFF
     @Override
-    public void notifyRefused(String request){
+    public void notifyRefused(int request){
 
     }
-    //TODO
+    //TODO: UI STUFF
     @Override
-    public void notifyDone(String request){
+    public void notifyDone(int request){
 
     }
 

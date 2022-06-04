@@ -36,17 +36,38 @@ public class TBackendMonitor extends  Thread{
     }
 
     //TODO
-    private void handleServer(IServerHandler handler, String initialRequest){
-        //handler.registerServer();
+    private void handleServer(IServerHandler handler, String request){
+        int port = Integer.parseInt(request.split("\\|")[1]);
+        parseServerInput(handler,request);
+        while (true){
+            try {
+                parseServerInput(handler,in.readLine());
+            } catch (IOException e) {
+                handler.removeServer(port);
+            }
+        }
     }
     //TODO
-    private void handleLoadBalancer(ILoadBalancerHandler handler, String initialRequest){
+    private void handleLoadBalancer(ILoadBalancerHandler handler, String request){
         isLoadBalancer = true;
         //handler.registerLoadBalancer();
     }
 
     //TODO
-    private void parseServerInput(String line){}
+    private void parseServerInput(IServerHandler handler,String line){
+        String[] request = line.split("\\|");
+        int port = Integer.parseInt(request[1]);
+        int complexity = Integer.parseInt(request[3]);
+        handler.registerServer(port,complexity);
+
+        if (request[0].equals("SR")){//refusal
+            handler.notifyRefused(Integer.parseInt(request[request.length-1]) );
+        }
+        else if (request[0].equals("SD")){ //done
+            handler.notifyDone(Integer.parseInt(request[request.length-1]) );
+        }
+
+    }
     //TODO
     private void parseLoadBalancerInput(String line){}
 

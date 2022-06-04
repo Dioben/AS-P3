@@ -35,7 +35,7 @@ public class TWatcherContact extends Thread{
     private void reportToMonitor() {
         rl.lock();
         int[] info = provider.getStatus();
-        String report = String.format("S|%s|%d|%d",ID,info[0],info[1]);
+        String report = String.format("S|%d|%d|%d",ID,info[0],info[1]);
         out.println(report);
         rl.unlock();
     }
@@ -43,7 +43,7 @@ public class TWatcherContact extends Thread{
     public void reportSuccessToMonitor(QueuedRequest request) {
         rl.lock();
         int[] info = provider.getStatus();
-        String report = String.format("SD|%s|%d|%d|%d|%d",ID,info[0],info[1],request.getReturnPort(),request.getRequestID());
+        String report = String.format("SD|%d|%d|%d|%d|%d",ID,info[0],info[1],request.getReturnPort(),request.getRequestID());
         out.println(report);
         rl.unlock();
     }
@@ -51,7 +51,7 @@ public class TWatcherContact extends Thread{
     public void reportRejectionToMonitor(QueuedRequest request) {
         rl.lock();
         int[] info = provider.getStatus();
-        String report = String.format("SR|%s|%d|%d|%d|%d",ID,info[0],info[1],request.getReturnPort(),request.getRequestID());
+        String report = String.format("SR|%d|%d|%d|%d|%d",ID,info[0],info[1],request.getReturnPort(),request.getRequestID());
         out.println(report);
         rl.unlock();
     }
