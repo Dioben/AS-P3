@@ -20,7 +20,7 @@ public class TCommsAssessor extends Thread{
             BufferedReader in = new BufferedReader(
                     new InputStreamReader(comms.getInputStream()));
             String inputLine = in.readLine();
-            String[] content = inputLine.split("|");
+            String[] content = inputLine.split("\\|");
             int clientID = Integer.parseInt(content[0]);
             int requestID = Integer.parseInt(content[1]);
             int precision = Integer.parseInt(content[4]);
