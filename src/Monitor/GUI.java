@@ -27,7 +27,6 @@ public class GUI extends Thread{
     private JScrollPane requestTableScrollPane;
     private JPanel cardPanel;
     private JSpinner selfPortSpinner;
-    private JSpinner loadBalancerPortSpinner;
     private JButton continueButton;
     private JPanel portsPanel;
     private JPanel systemPanel;
@@ -57,21 +56,16 @@ public class GUI extends Thread{
         systemPanel.setMinimumSize(new Dimension(WINDOW_WIDTH - TABLE_WIDTH - 19, TABLE_HEIGHT));
         systemPanel.setPreferredSize(new Dimension(WINDOW_WIDTH - TABLE_WIDTH - 19, TABLE_HEIGHT));
 
-        for (JSpinner spinner : new JSpinner[] {
-                selfPortSpinner,
-                loadBalancerPortSpinner
-        }) {
-            spinner.setValue(8000);
-            ((DefaultFormatter) ((JFormattedTextField) spinner.getEditor().getComponent(0)).getFormatter()).setCommitsOnValidEdit(true);
-            spinner.addChangeListener(e -> {
-                int port = (int) spinner.getValue();
-                if (port > 65535) {
-                    spinner.setValue(65535);
-                } else if (port < 0) {
-                    spinner.setValue(0);
-                }
-            });
-        }
+        selfPortSpinner.setValue(8000);
+        ((DefaultFormatter) ((JFormattedTextField) selfPortSpinner.getEditor().getComponent(0)).getFormatter()).setCommitsOnValidEdit(true);
+        selfPortSpinner.addChangeListener(e -> {
+            int port = (int) selfPortSpinner.getValue();
+            if (port > 65535) {
+                selfPortSpinner.setValue(65535);
+            } else if (port < 0) {
+                selfPortSpinner.setValue(0);
+            }
+        });
 
         continueButton.addActionListener(e -> {
             // TODO
