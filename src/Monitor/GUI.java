@@ -1,4 +1,4 @@
-package LB;
+package Monitor;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -14,11 +14,12 @@ public class GUI extends Thread{
 
     private final BlockingQueue<Object[]> updates = new LinkedBlockingQueue<>();
 
-    private static final String TITLE = "Load balancer";
-    private static final int WINDOW_WIDTH = 432;
+    private static final String TITLE = "Monitor";
+    private static final int WINDOW_WIDTH = 768;
     private static final int WINDOW_HEIGHT = 256;
-    private static final int TABLE_WIDTH = WINDOW_WIDTH-101;
+    private static final int TABLE_WIDTH = 496;
     private static final int TABLE_HEIGHT = WINDOW_HEIGHT-32;
+    private int PICellWidth = TABLE_WIDTH/6;
 
     private final JFrame frame;
     private JPanel mainPanel;
@@ -26,12 +27,17 @@ public class GUI extends Thread{
     private JScrollPane requestTableScrollPane;
     private JPanel cardPanel;
     private JSpinner selfPortSpinner;
-    private JSpinner monitorPortSpinner;
+    private JSpinner loadBalancerPortSpinner;
     private JButton continueButton;
     private JPanel portsPanel;
-    private JPanel serverCountPanel;
-    private JLabel availableServerCount;
-    private JLabel fullServerCount;
+    private JPanel systemPanel;
+    private JList<String[]> systemList;
+    private DefaultListModel<String[]> systemListModel;
+    private JPanel systemCountPanel;
+    private JScrollPane systemListScrollPane;
+    private JLabel availableSystemCountLabel;
+    private JLabel fullSystemCountLabel;
+    private JLabel stoppedSystemCountLabel;
     private DefaultTableModel requestTableModel;
 
     public GUI() {
@@ -48,14 +54,12 @@ public class GUI extends Thread{
         requestTableScrollPane.setMinimumSize(new Dimension(TABLE_WIDTH, TABLE_HEIGHT));
         requestTableScrollPane.setPreferredSize(new Dimension(TABLE_WIDTH, TABLE_HEIGHT));
 
-        serverCountPanel.setMinimumSize(new Dimension(WINDOW_WIDTH - TABLE_WIDTH - 30, TABLE_HEIGHT));
-        serverCountPanel.setBorder(new EmptyBorder(0, 8, 4, 0));
-        availableServerCount.setBorder(new EmptyBorder(8, 4, 0 ,0));
-        fullServerCount.setBorder(new EmptyBorder(8, 4, 0 ,0));
+        systemPanel.setMinimumSize(new Dimension(WINDOW_WIDTH - TABLE_WIDTH - 19, TABLE_HEIGHT));
+        systemPanel.setPreferredSize(new Dimension(WINDOW_WIDTH - TABLE_WIDTH - 19, TABLE_HEIGHT));
 
         for (JSpinner spinner : new JSpinner[] {
                 selfPortSpinner,
-                monitorPortSpinner
+                loadBalancerPortSpinner
         }) {
             spinner.setValue(8000);
             ((DefaultFormatter) ((JFormattedTextField) spinner.getEditor().getComponent(0)).getFormatter()).setCommitsOnValidEdit(true);
@@ -72,6 +76,16 @@ public class GUI extends Thread{
         continueButton.addActionListener(e -> {
             // TODO
         });
+
+        systemListModel = new DefaultListModel<>();
+        systemList.setModel(systemListModel);
+        systemList.setCellRenderer(new CustomListCellRenderer());
+
+        systemCountPanel.setBorder(new EmptyBorder(0, 0, 9, 0));
+
+        availableSystemCountLabel.setBorder(new EmptyBorder(0, 4, 0 ,0));
+        fullSystemCountLabel.setBorder(new EmptyBorder(0, 4, 0 ,0));
+        stoppedSystemCountLabel.setBorder(new EmptyBorder(0, 4, 0 ,0));
     }
 
     public void run() {
@@ -98,20 +112,22 @@ public class GUI extends Thread{
         }
     }
 
-    public void updateRequest(int requestId, int clientId, int iterations, int deadline) {
+    public void updateRequest(int requestId, int serverId, int iterations, int deadline, String status, String PI) {
         try {
             updates.put(new Object[] {
                     requestId,
-                    clientId,
+                    serverId,
                     iterations,
-                    deadline
+                    deadline,
+                    status,
+                    PI
             });
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
 
-    public void setMonitorPortValidity(boolean valid) {
+    public void setLoadBalancerPortValidity(boolean valid) {
         if (!valid) {
             // TODO
             JOptionPane.showMessageDialog(null, "Connection to monitor port failed.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -125,7 +141,7 @@ public class GUI extends Thread{
             // TODO
             JOptionPane.showMessageDialog(null, "Invalid self port.", "Error", JOptionPane.ERROR_MESSAGE);
         } else {
-            frame.setTitle(TITLE + " (" + selfPortSpinner.getValue() + ")"); // TODO
+            frame.setTitle(TITLE + " (" + selfPortSpinner.getValue() + ")");
             ((CardLayout) cardPanel.getLayout()).next(cardPanel);
         }
     }
@@ -136,16 +152,34 @@ public class GUI extends Thread{
             public Component prepareRenderer(TableCellRenderer renderer, int row, int column) {
                 Component component = super.prepareRenderer(renderer, row, column);
 
-                TableColumn tableColumn = getColumnModel().getColumn(column);
-                tableColumn.setPreferredWidth(TABLE_WIDTH/4);
+                // Set minimum width for the PI column
+                if (column == 5) {
+                    int rendererWidth = component.getPreferredSize().width;
+                    TableColumn tableColumn = getColumnModel().getColumn(column);
+                    PICellWidth = Math.max(rendererWidth + getIntercellSpacing().width, PICellWidth);
+                    tableColumn.setPreferredWidth(PICellWidth);
+                } else {
+                    TableColumn tableColumn = getColumnModel().getColumn(column);
+                    tableColumn.setPreferredWidth(TABLE_WIDTH/6);
+                }
+
+                // Color rows based on a cell value
+                switch (getValueAt(row, 4).toString()) {
+                    case "Finished" -> component.setBackground(new Color(205, 233, 165));
+                    case "Pending" -> component.setBackground(new Color(253, 223, 155));
+                    case "Rejected" -> component.setBackground(new Color(253, 186, 186));
+                }
 
                 return component;
             }
         };
-        requestTableModel = new DefaultTableModel(new String[] {"Request", "Client", "Iterations", "Deadline"}, 0) {
+        requestTableModel = new DefaultTableModel(new String[] {"Request", "Server", "Iterations", "Deadline", "Status", "PI"}, 0) {
             @Override
             public Class getColumnClass(int column) {
-                return Integer.class;
+                return switch (column) {
+                    case 4, 5 -> String.class;
+                    default -> Integer.class;
+                };
             }
         };
         requestTable.setModel(requestTableModel);
@@ -170,6 +204,42 @@ public class GUI extends Thread{
             JFrame.setDefaultLookAndFeelDecorated(true);
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private static class CustomListCellRenderer extends JPanel implements ListCellRenderer<String[]> {
+
+        JLabel nameLabel = new JLabel();
+        JLabel statusLabel = new JLabel();
+
+        public CustomListCellRenderer() {
+            setLayout(new BorderLayout());
+            add(nameLabel, BorderLayout.WEST);
+            add(statusLabel, BorderLayout.EAST);
+            setBorder(new EmptyBorder(4, 8, 6, 8));
+        }
+
+        @Override
+        public Component getListCellRendererComponent(JList<? extends String[]> list, String[] value, int index, boolean isSelected, boolean cellHasFocus) {
+            nameLabel.setText(value[0]);
+
+            switch (value[1]) {
+                case "Available" -> statusLabel.setForeground(new Color(8, 129, 93));
+                case "Full" -> statusLabel.setForeground(new Color(231, 121, 0));
+                case "Stopped" -> statusLabel.setForeground(new Color(201, 42, 42));
+            }
+            statusLabel.setText("⬤");
+            statusLabel.setBorder(new EmptyBorder(0, 0, 2, 0));
+            setToolTipText(value[1]);
+
+            Color background;
+            if (isSelected)
+                background = list.getSelectionBackground();
+            else
+                background = list.getBackground();
+            setBackground(new Color(background.getRed(), background.getGreen(), background.getBlue()));
+
+            return this;
         }
     }
 }
