@@ -67,6 +67,11 @@ public class TWatcherContact extends Thread implements IMonitorInfoContact {
     }
 
     @Override
+    public void reportCancelToMonitor(String reqID) {
+    reportDispatchToMonitor(reqID,-1);
+    }
+
+    @Override
     public void reportReady() {
         rl.lock();
         String report = String.format("LBR");

@@ -28,16 +28,30 @@ public class TCommsDirector extends Thread{
         }catch (Exception e){}
         String statuses = src.requestStatusFromMonitor(inputLine);
         int port = getOptimalServer(statuses);
+        if (port!=-1){
+            try{
+                Socket redirect = new Socket("localhost",port);
+                PrintWriter out = new PrintWriter(redirect.getOutputStream());
+                out.println(inputLine);
+                redirect.close();
+                out.close();
+                String[] split = inputLine.split("\\|");
+                src.reportDispatchToMonitor(split[1],port);
+            } catch (Exception e) {}
+        }else{
+            try{
+                Socket cancel = new Socket("localhost",port);
+                PrintWriter out = new PrintWriter(cancel.getOutputStream());
+                String[] data = inputLine.split("\\|");
+                data[2] = "-1";
+                data[3] = "03";
+                out.println(String.join("|",data));
+                out.close();
+                cancel.close();
+                src.reportCancelToMonitor(data[1]);
+            } catch (Exception e) {}
+        }
 
-        try{
-            Socket redirect = new Socket("localhost",port);
-            PrintWriter out = new PrintWriter(redirect.getOutputStream());
-            out.println(inputLine);
-            redirect.close();
-            out.close();
-            String[] split = inputLine.split("\\|");
-            src.reportDispatchToMonitor(split[1],port);
-        } catch (Exception e) {}
 
 
     }
@@ -52,9 +66,6 @@ public class TCommsDirector extends Thread{
             best = localLoad;
             port = Integer.parseInt(input[i*2]);
         }
-    }
-    if (port==-1){
-        throw new RuntimeException("No servers available or all servers above max load");
     }
     return port;
 

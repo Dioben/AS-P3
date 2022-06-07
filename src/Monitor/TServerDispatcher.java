@@ -122,7 +122,11 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
     }
     //TODO: UI STUFF
     @Override
-    public void notifyDispatched(int request, int port){
+    public void notifyDispatched(int port, int request){
+        if (port==-1){
+            notifyRefusedByLB(request);
+            return;
+        }
         rl.lock();
         for (int i =0;i<awaitingDispatch.size();i++)
             if (awaitingDispatch.get(i).getReqID()==request){
@@ -130,7 +134,18 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
                 if (!awaitingResolution.containsKey(port)){ //entry may have to be initiated
                     awaitingResolution.put(port,new ArrayList<>());
                 }
+
                 awaitingResolution.get(port).add(awaitingDispatch.remove(i)); //move this from await dispatch to await resolution
+                break;
+            }
+        rl.unlock();
+    }
+
+    private void notifyRefusedByLB(int request) {
+        rl.lock();
+        for (int i =0;i<awaitingDispatch.size();i++)
+            if (awaitingDispatch.get(i).getReqID()==request){
+                awaitingDispatch.remove(i); //move this from await dispatch to await resolution
                 break;
             }
         rl.unlock();
