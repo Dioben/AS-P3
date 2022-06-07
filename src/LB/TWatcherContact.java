@@ -66,6 +66,13 @@ public class TWatcherContact extends Thread implements IMonitorInfoContact {
         rl.unlock();
     }
 
+    @Override
+    public void reportReady() {
+        rl.lock();
+        String report = String.format("LBR");
+        out.println(report);
+        rl.unlock();
+    }
 
 
     private void setPrimary(int port) {

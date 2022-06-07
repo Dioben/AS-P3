@@ -5,7 +5,7 @@ public interface IServerHandler {
 
     void removeServer(int port);
 
-    void notifyRefused(int request);
+    void notifyRefused(int port,int request);
 
-    void notifyDone(int request);
+    void notifyDone(int port, int request);
 }

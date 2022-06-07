@@ -6,14 +6,19 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class TBackendMonitor extends  Thread{
     private static final int SOCKET_TIMEOUT = 11000;
     private final Socket comms;
     private BufferedReader in;
     private PrintWriter out;
+    private final ReentrantLock rl = new ReentrantLock();
+    private final Condition primaryActivated = rl.newCondition();
     private final IHandlerSource parent;
     private boolean isLoadBalancer = false;
+    private boolean activatedPrimary = false;
 
     public TBackendMonitor(Socket accept, IHandlerSource tServerDispatcher) {
         comms = accept;
@@ -35,7 +40,7 @@ public class TBackendMonitor extends  Thread{
             }
         } catch (IOException e) {}
     }
-    //TODO: MAYBE MOVE THESE HANDLE/PARSE INTO CUSTOM OBJECTS
+
     private void handleServer(IServerHandler handler, String request){
         int port = Integer.parseInt(request.split("\\|")[1]);
         parseServerInput(handler,request);
@@ -44,22 +49,44 @@ public class TBackendMonitor extends  Thread{
                 parseServerInput(handler,in.readLine());
             } catch (IOException e) {
                 handler.removeServer(port);
+                try{
+                    in.close();
+                    out.close();
+                    comms.close();
+
+                } catch (IOException ioException) {}
+                return;
+
             }
         }
     }
 
-    private void handleLoadBalancer(ILoadBalancerHandler handler, String request){
+    private void handleLoadBalancer(ILoadBalancerHandler handler, String request) {
         isLoadBalancer = true;
         if (!request.startsWith("LB|")) //basic keepalive rather than advanced message
             throw new RuntimeException("Load Balancer is asking for information before primary");
         int port = Integer.parseInt(request.split("|")[1]);
-        handler.registerLoadBalancer(port,this);
+        if (!handler.registerLoadBalancer(port,this)){
+            try {
+                in.close();
+                out.close();
+                comms.close();
+            } catch (IOException e) {}
+            return;
+        }
         while (true){
             try {
                 parseLoadBalancerInput(handler,in.readLine());
             } catch (IOException e) {
                 handler.removeLoadBalancer(port);
+                try {
+                    in.close();
+                    out.close();
+                    comms.close();
+                } catch (IOException ex) {}
+                return;
             }
+
         }
     }
 
@@ -71,10 +98,10 @@ public class TBackendMonitor extends  Thread{
         handler.registerServer(port,complexity);
 
         if (request[0].equals("SR")){//refusal
-            handler.notifyRefused(Integer.parseInt(request[request.length-1]) );
+            handler.notifyRefused(Integer.parseInt(request[1]),Integer.parseInt(request[request.length-1]) );
         }
         else if (request[0].equals("SD")){ //done
-            handler.notifyDone(Integer.parseInt(request[request.length-1]) );
+            handler.notifyDone(Integer.parseInt(request[1]),Integer.parseInt(request[request.length-1]) );
         }
 
     }
@@ -87,18 +114,33 @@ public class TBackendMonitor extends  Thread{
             int iter = Integer.parseInt(request[6]);
             int deadline= Integer.parseInt(request[8]);
             String status = handler.notifyHandling(client,reqID,iter,deadline);
+            rl.lock();
             out.println(status);
+            rl.unlock();
         }
         else if (request[0].equals("LBD")){
             int reqID = Integer.parseInt(request[2]);
             int serverID = Integer.parseInt(request[3]);
             handler.notifyDispatched(reqID,serverID);
         }
+        else if (request[0].equals("LBR")){
+            rl.lock();
+            activatedPrimary = true;
+            primaryActivated.signalAll();
+            rl.unlock();
+        }
     }
 
-    public void shiftToPrimaryLoadBalancer(String catchUp){
+    public void shiftToPrimaryLoadBalancer(int port){
         if (!isLoadBalancer)
             throw new RuntimeException("Takeover called for something that is not a load balancer");
-            out.println(catchUp);
+            rl.lock();
+            out.println("TAKEOVER "+port);
+            while(!activatedPrimary) {
+                try {
+                    primaryActivated.await();
+                } catch (InterruptedException e) {}
+            }
+            rl.unlock();
     }
 }
