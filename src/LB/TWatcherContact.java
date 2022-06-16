@@ -26,7 +26,7 @@ public class TWatcherContact extends Thread implements IMonitorInfoContact {
         try {
             Socket watcherSocket = new Socket("localhost",watcherPort); //TODO: MAYBE GENERIC THIS TO NOT ONLY LH
             gui.setMonitorPortValidity(true);
-            out = new PrintWriter(watcherSocket.getOutputStream());
+            out = new PrintWriter(watcherSocket.getOutputStream(), true);
             reader = new BufferedReader(new InputStreamReader(watcherSocket.getInputStream()));
             new TWaitTakeover(reader,this).start();
             while(! Thread.interrupted()){

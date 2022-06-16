@@ -30,7 +30,7 @@ public class TBackendMonitor extends  Thread{
         try {
             comms.setSoTimeout(SOCKET_TIMEOUT); //set this socket to time out if nothing is said in 11 second window
             in = new BufferedReader(new InputStreamReader(comms.getInputStream()));
-            out = new PrintWriter(comms.getOutputStream());
+            out = new PrintWriter(comms.getOutputStream(), true);
             String inputLine = in.readLine();
             if (inputLine.startsWith("S")){
                 handleServer(parent.getServerHandler(),inputLine);
@@ -65,7 +65,7 @@ public class TBackendMonitor extends  Thread{
         isLoadBalancer = true;
         if (!request.startsWith("LB|")) //basic keepalive rather than advanced message
             throw new RuntimeException("Load Balancer is asking for information before primary");
-        int port = Integer.parseInt(request.split("|")[1]);
+        int port = Integer.parseInt(request.split("\\|")[1]);
         if (!handler.registerLoadBalancer(port,this)){
             try {
                 in.close();

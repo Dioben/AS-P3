@@ -193,7 +193,7 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
             Request request = requests.remove(0);
             try {
                 Socket ext = new Socket("localhost",loadBalancerPrimaryPort);
-                PrintWriter out = new PrintWriter(ext.getOutputStream());
+                PrintWriter out = new PrintWriter(ext.getOutputStream(), true);
                 String msg = String.format("%d|%d|00|01|%d|00|%d", request.getClient(),
                         request.getReqID(),
                         request.getIter(),

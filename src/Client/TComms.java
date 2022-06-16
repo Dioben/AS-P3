@@ -43,7 +43,7 @@ public class TComms extends Thread implements IRegisterMessage, ISender {
     public void sendRequest(int precision, int deadline){
         try {
             Socket ext = new Socket("localhost",outPort);
-            PrintWriter out = new PrintWriter(ext.getOutputStream());
+            PrintWriter out = new PrintWriter(ext.getOutputStream(), true);
 
             sendlock.lock();
             gui.updateRequest(1000*selfPort+sent, null, precision, deadline, "Pending", null);

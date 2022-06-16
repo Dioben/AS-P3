@@ -31,7 +31,7 @@ public class TCommsDirector extends Thread{
         if (port!=-1){
             try{
                 Socket redirect = new Socket("localhost",port);
-                PrintWriter out = new PrintWriter(redirect.getOutputStream());
+                PrintWriter out = new PrintWriter(redirect.getOutputStream(), true);
                 out.println(inputLine);
                 redirect.close();
                 out.close();
@@ -41,7 +41,7 @@ public class TCommsDirector extends Thread{
         }else{
             try{
                 Socket cancel = new Socket("localhost",port); // TODO: get client port
-                PrintWriter out = new PrintWriter(cancel.getOutputStream());
+                PrintWriter out = new PrintWriter(cancel.getOutputStream(), true);
                 String[] data = inputLine.split("\\|");
                 data[2] = "-1";
                 data[3] = "03";

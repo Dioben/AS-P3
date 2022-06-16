@@ -24,7 +24,7 @@ public class TWatcherContact extends Thread{
         try {
             Socket watcherSocket = new Socket("localhost",watcherPort); //TODO: MAYBE GENERIC THIS TO NOT ONLY LH
             gui.setMonitorPortValidity(true);
-            out = new PrintWriter(watcherSocket.getOutputStream());
+            out = new PrintWriter(watcherSocket.getOutputStream(), true);
 
             while(! Thread.interrupted()){
                 Thread.sleep(5000);

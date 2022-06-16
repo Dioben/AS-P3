@@ -1,9 +1,5 @@
 package Server;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.Socket;
-
 public class TSolver extends Thread{
     private final static String PI = "3.1415926589793";
     private final QueuedRequest request;

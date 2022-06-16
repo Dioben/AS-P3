@@ -124,7 +124,7 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
         gui.updateRequest(request.getRequestID(), request.getReturnPort(), request.getPrecision(), request.getDeadline(), "Finished", result);
         try {
             Socket res = new Socket("localhost",request.getReturnPort());
-            PrintWriter out = new PrintWriter(res.getOutputStream());
+            PrintWriter out = new PrintWriter(res.getOutputStream(), true);
             out.println(String.format("%d|%d|%d|02|%d|%d|%d", request.getReturnPort(),
                     request.getRequestID(),
                     this.port,
@@ -141,7 +141,7 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
         gui.updateRequest(request.getRequestID(), request.getReturnPort(), request.getPrecision(), request.getDeadline(), "Rejected", "");
         try {
             Socket res = new Socket("localhost",request.getReturnPort());
-            PrintWriter out = new PrintWriter(res.getOutputStream());
+            PrintWriter out = new PrintWriter(res.getOutputStream(), true);
             out.println(String.format("%d|%d|%d|03|%d|00|%d", request.getReturnPort(),
                     request.getRequestID(),
                     this.port,
