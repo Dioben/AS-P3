@@ -25,6 +25,7 @@ public class TServerDispatcher extends Thread {
     public void run() { // run socket thread creation indefinitely
         try {
             serverSocket = new ServerSocket(port);
+            watcherContact.reportReady();
             while (true) {
                 new TCommsDirector(serverSocket.accept(),watcherContact).start();
             }

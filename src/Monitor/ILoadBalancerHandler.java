@@ -8,5 +8,5 @@ public interface ILoadBalancerHandler {
     //TODO: BETTER PARAMS FOR THESE
     String notifyHandling(int client, int request,int iter, int deadline);
 
-    void notifyDispatched(int request ,int server);
+    void notifyDispatched(int server ,int request);
 }
