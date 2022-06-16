@@ -27,23 +27,24 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
     private final Map<Integer,List<Request>> awaitingResolution = new HashMap<>();
 
 
+    private GUI gui;
 
-
-    //private TGUI gui; TODO: INSERT UI CLASS LATER
-
-    public TServerDispatcher(int port, int loadBalancer) {
+    public TServerDispatcher(int port, int loadBalancer, GUI gui) {
         this.port = port;
+        this.gui = gui;
         rl = new ReentrantLock();
         loadBalancerPrimaryPort = loadBalancer;
     }
     public void run() { // run socket thread creation indefinitely
         try {
             serverSocket = new ServerSocket(port);
-
+            gui.setSelfPortValidity(true);
             while (true) {
                 new TBackendMonitor(serverSocket.accept(),this).start();
             }
-        } catch (IOException e) {}
+        } catch (IOException e) {
+            gui.setSelfPortValidity(false);
+        }
     }
 
     @Override
@@ -51,6 +52,7 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
         rl.lock();
         servers.put(port,complexityLoad);
         rl.unlock();
+        gui.addServer(port);
     }
     @Override
     public void removeServer(int port){
@@ -63,6 +65,7 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
         if (lost!=null && lost.size()>0){
             sendRequestsToPrimaryLB(lost);
         }
+        gui.changeStatus(port, "Stopped");
     }
 
 
@@ -83,6 +86,7 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
             holder.shiftToPrimaryLoadBalancer(loadBalancerPrimaryPort);
             sendRequestsToPrimaryLB(awaitingDispatch);
         }
+        gui.addLoadBalancer(port, primary);
         return allowed;
     }
 
@@ -104,12 +108,11 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
             hld.getMngThread().shiftToPrimaryLoadBalancer(loadBalancerPrimaryPort); //long operation, avoid doing it in lock
             sendRequestsToPrimaryLB(awaitingDispatch);
         }
-
+        gui.changeStatus(port, "Stopped");
     }
 
-    //TODO: UI STUFF
     @Override
-    public String notifyHandling(int client, int reqID, int iter, int deadline){
+    public String notifyHandling(int loadBalancerId, int client, int reqID, int iter, int deadline){
         String content = "";
         rl.lock();
         for (int port:servers.keySet())
@@ -118,11 +121,13 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
         }
         awaitingDispatch.add(new Request(client,reqID,iter,deadline));
         rl.unlock();
+        gui.addLoadBalancerRequest(loadBalancerId, reqID, client, iter, deadline);
         return content.substring(0,content.length()-1); //cut out last |
     }
-    //TODO: UI STUFF
+
     @Override
     public void notifyDispatched(int port, int request){
+        gui.removeLoadBalancerRequest(port, request);
         if (port==-1){
             notifyRefusedByLB(request);
             return;
@@ -151,18 +156,16 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
         rl.unlock();
     }
 
-    //TODO: UI STUFF
     @Override
     public void notifyRefused(int port, int request){
         removeRequestFromServerPending(port, request);
+        gui.updateServerRequest(port, request, null, null, null, "Rejected", null);
     }
 
-
-
-    //TODO: UI STUFF
     @Override
     public void notifyDone(int port, int request){
         removeRequestFromServerPending(port, request);
+        gui.updateServerRequest(port, request, null, null, null, "Finished", null);
     }
     private void removeRequestFromServerPending(int port, int request) {
         rl.lock();

@@ -90,12 +90,11 @@ public class TBackendMonitor extends  Thread{
         }
     }
 
-    //TODO
     private void parseServerInput(IServerHandler handler,String line){
         String[] request = line.split("\\|");
         int port = Integer.parseInt(request[1]);
         int complexity = Integer.parseInt(request[3]);
-        handler.registerServer(port,complexity);
+        handler.registerServer(port,complexity); // TODO: why do we ignore number of requests (request[2])?
 
         if (request[0].equals("SR")){//refusal
             handler.notifyRefused(Integer.parseInt(request[1]),Integer.parseInt(request[request.length-1]) );
@@ -109,11 +108,12 @@ public class TBackendMonitor extends  Thread{
     private void parseLoadBalancerInput(ILoadBalancerHandler handler,String line){
         String[] request = line.split("\\|");
         if (request[0].equals("LBIR")){
+            int id = Integer.parseInt(request[1]);
             int client = Integer.parseInt(request[2]);
             int reqID = Integer.parseInt(request[3]);
             int iter = Integer.parseInt(request[6]);
             int deadline= Integer.parseInt(request[8]);
-            String status = handler.notifyHandling(client,reqID,iter,deadline);
+            String status = handler.notifyHandling(id,client,reqID,iter,deadline);
             rl.lock();
             out.println(status);
             rl.unlock();

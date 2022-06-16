@@ -10,16 +10,20 @@ public class TWatcherContact extends Thread{
     private PrintWriter out;
     private final IServerStatusProvider provider;
     private final ReentrantLock rl = new ReentrantLock();
-    public TWatcherContact(int watcher,int ID, IServerStatusProvider provider) {
+    private final GUI gui;
+
+    public TWatcherContact(int watcher,int ID, IServerStatusProvider provider, GUI gui) {
        watcherPort = watcher;
        this.ID = ID;
        this.provider = provider;
+       this.gui = gui;
     }
 
     @Override
     public void run() {
         try {
             Socket watcherSocket = new Socket("localhost",watcherPort); //TODO: MAYBE GENERIC THIS TO NOT ONLY LH
+            gui.setMonitorPortValidity(true);
             out = new PrintWriter(watcherSocket.getOutputStream());
 
             while(! Thread.interrupted()){
@@ -28,6 +32,7 @@ public class TWatcherContact extends Thread{
             }
 
         } catch (IOException | InterruptedException e) {
+            gui.setMonitorPortValidity(false);
             this.interrupt();
         }
     }

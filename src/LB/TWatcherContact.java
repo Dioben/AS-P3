@@ -12,17 +12,20 @@ public class TWatcherContact extends Thread implements IMonitorInfoContact {
     private BufferedReader reader;
 
     private final ReentrantLock rl = new ReentrantLock();
+    private final GUI gui;
     private boolean isPrimary= false;
 
-    public TWatcherContact(int watcher, int ID) {
+    public TWatcherContact(int watcher, int ID, GUI gui) {
        watcherPort = watcher;
        this.ID = ID;
+       this.gui = gui;
     }
 
     @Override
     public void run() {
         try {
             Socket watcherSocket = new Socket("localhost",watcherPort); //TODO: MAYBE GENERIC THIS TO NOT ONLY LH
+            gui.setMonitorPortValidity(true);
             out = new PrintWriter(watcherSocket.getOutputStream());
             reader = new BufferedReader(new InputStreamReader(watcherSocket.getInputStream()));
             new TWaitTakeover(reader,this).start();
@@ -31,6 +34,7 @@ public class TWatcherContact extends Thread implements IMonitorInfoContact {
                     reportToMonitor();
             }
         } catch (IOException | InterruptedException e) {
+            gui.setMonitorPortValidity(false);
             this.interrupt();
         }
     }
@@ -46,6 +50,14 @@ public class TWatcherContact extends Thread implements IMonitorInfoContact {
         if (!isPrimary){
             throw new RuntimeException("Should not be fetching info while not primary");
         }
+
+        String[] requestSplit = request.split("\\|");
+        int clientId = Integer.parseInt(requestSplit[0]);
+        int requestId = Integer.parseInt(requestSplit[1]);
+        int iterations = Integer.parseInt(requestSplit[4]);
+        int deadline= Integer.parseInt(requestSplit[6]);
+        gui.addRequest(requestId, clientId, iterations, deadline);
+
         rl.lock();
         String report = String.format("LBIR|%s|%s",ID,request);
         out.println(report);
@@ -55,11 +67,24 @@ public class TWatcherContact extends Thread implements IMonitorInfoContact {
             content = reader.readLine();
         } catch (IOException e) {}
         rl.unlock();
+
+        String[] contentSplit = content.split("\\|");
+        int available = 0;
+        int full = 0;
+        for (int i = 1; i < contentSplit.length; i+=2) {
+            if (Integer.parseInt(contentSplit[i]) < 20)
+                available++;
+            else
+                full++;
+        }
+        gui.setServerCounts(available, full);
+
         return content;
 
     }
 
     public void reportDispatchToMonitor(String reqID, int serverID) {
+        gui.removeRequest(Integer.parseInt(reqID));
         rl.lock();
         String report = String.format("LBD|%d|%s|%d",ID,reqID,serverID);
         out.println(report);
@@ -85,7 +110,7 @@ public class TWatcherContact extends Thread implements IMonitorInfoContact {
             throw new RuntimeException("Assigned Primary to same entity twice");
         new TServerDispatcher(port,this).start();
         this.isPrimary = true;
-
+        gui.setSelfMain();
     }
 
     private class TWaitTakeover extends Thread{

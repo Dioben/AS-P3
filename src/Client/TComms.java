@@ -16,23 +16,27 @@ public class TComms extends Thread implements IRegisterMessage, ISender {
     private final int outPort;
     private int sent = 0;
     private final ReentrantLock sendlock = new ReentrantLock();
-    //private TGUI gui; #TODO: GUI CLASS
+    private GUI gui;
 
 
-    TComms(int selfPort, int outPort) {
+    TComms(int selfPort, int outPort, GUI gui) {
         this.selfPort = selfPort;
         this.outPort = outPort;
-
+        this.gui = gui;
     }
 
     @Override
     public void run() {
         try {
             ServerSocket serverSocket = new ServerSocket(selfPort);
+            gui.setSelfPortValidity(true);
             while (true) {
                 new TCommsReader(serverSocket.accept(),selfPort,this).start();
             }
-        } catch (IOException e) {}
+        } catch (IOException e) {
+            gui.setSelfPortValidity(false);
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -42,6 +46,7 @@ public class TComms extends Thread implements IRegisterMessage, ISender {
             PrintWriter out = new PrintWriter(ext.getOutputStream());
 
             sendlock.lock();
+            gui.updateRequest(1000*selfPort+sent, null, precision, deadline, "Pending", null);
             String msg = String.format("%d|%d|00|01|%d|00|%d", selfPort,
                     1000*selfPort+sent,
                     precision,
@@ -57,10 +62,10 @@ public class TComms extends Thread implements IRegisterMessage, ISender {
 
     @Override
     public void registerDecline(int ID, int server){
-        //gui.registerDecline(ID,server);#TODO: GUI CLASS
+        gui.updateRequest(ID, server, null, null, "Rejected", null);
     }
     @Override
     public void registerResponse(int ID,int server, String response){
-        //gui.registerResponse(ID,response);#TODO: GUI CLASS
+        gui.updateRequest(ID, server, null, null, "Finished", response);
     }
 }
