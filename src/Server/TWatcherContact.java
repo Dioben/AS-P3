@@ -10,7 +10,7 @@ public class TWatcherContact extends Thread{
     private PrintWriter out;
     private final IServerStatusProvider provider;
     private final ReentrantLock rl = new ReentrantLock();
-    private GUI gui;
+    private final GUI gui;
 
     public TWatcherContact(int watcher,int ID, IServerStatusProvider provider, GUI gui) {
        watcherPort = watcher;

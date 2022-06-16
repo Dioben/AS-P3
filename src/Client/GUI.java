@@ -12,6 +12,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class GUI extends Thread{
 
+    private TComms comms;
     private final BlockingQueue<Object[]> updates = new LinkedBlockingQueue<>();
 
     private static final String TITLE = "Client";
@@ -64,11 +65,14 @@ public class GUI extends Thread{
         setSpinnerMinMax(deadlineSpinner, 0, Integer.MAX_VALUE);
 
         continueButton.addActionListener(e -> {
-            // TODO
+            if (comms == null) {
+                comms = new TComms((int) selfPortSpinner.getValue(), (int) loadBalancerPortSpinner.getValue(), this);
+                comms.start();
+            }
         });
 
         sendRequestButton.addActionListener(e -> {
-            // TODO
+            comms.sendRequest((int) iterationsSpinner.getValue(), (int) deadlineSpinner.getValue());
         });
     }
 
@@ -82,8 +86,9 @@ public class GUI extends Thread{
                 boolean newRequest = true;
                 for (int i = 0; i < requestTableModel.getRowCount(); i++) {
                     if (requestTableModel.getValueAt(i, 0).equals(update[0])) {
-                        for (int col = 0; col < 6; col++)
-                            requestTableModel.setValueAt(update[col], i, col);
+                        for (int col = 0; col < update.length; col++)
+                            if (update[col] != null)
+                                requestTableModel.setValueAt(update[col], i, col);
                         newRequest = false;
                         break;
                     }
@@ -96,7 +101,7 @@ public class GUI extends Thread{
         }
     }
 
-    public void updateRequest(int requestId, int serverId, int iterations, int deadline, String status, String PI) {
+    public void updateRequest(int requestId, Integer serverId, Integer iterations, Integer deadline, String status, String PI) {
         try {
             updates.put(new Object[] {
                     requestId,
@@ -111,18 +116,9 @@ public class GUI extends Thread{
         }
     }
 
-    public void setLoadBalancerPortValidity(boolean valid) {
-        if (!valid) {
-            // TODO
-            JOptionPane.showMessageDialog(null, "Connection to monitor port failed.", "Error", JOptionPane.ERROR_MESSAGE);
-        } else {
-            // TODO
-        }
-    }
-
     public void setSelfPortValidity(boolean valid) {
         if (!valid) {
-            // TODO
+            comms = null;
             JOptionPane.showMessageDialog(null, "Invalid self port.", "Error", JOptionPane.ERROR_MESSAGE);
         } else {
             frame.setTitle(TITLE + " (" + selfPortSpinner.getValue() + ")");

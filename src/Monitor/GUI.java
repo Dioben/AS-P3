@@ -7,12 +7,17 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.text.DefaultFormatter;
 import java.awt.*;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class GUI extends Thread{
 
+    private TServerDispatcher serverDispatcher;
     private final BlockingQueue<Object[]> updates = new LinkedBlockingQueue<>();
+    private final HashMap<Integer, Object[]> requestTableModels = new HashMap<>();
+    private final DefaultListModel<String[]> systemListModel;
 
     private static final String TITLE = "Monitor";
     private static final int WINDOW_WIDTH = 768;
@@ -31,13 +36,14 @@ public class GUI extends Thread{
     private JPanel portsPanel;
     private JPanel systemPanel;
     private JList<String[]> systemList;
-    private DefaultListModel<String[]> systemListModel;
     private JPanel systemCountPanel;
-    private JScrollPane systemListScrollPane;
     private JLabel availableSystemCountLabel;
     private JLabel fullSystemCountLabel;
     private JLabel stoppedSystemCountLabel;
-    private DefaultTableModel requestTableModel;
+    private JSpinner loadBalancerPortSpinner;
+    private JLabel availableSystemCountXLabel;
+    private JLabel fullSystemCountXLabel;
+    private JLabel stoppedSystemCountXLabel;
 
     public GUI() {
         frame = new JFrame(TITLE);
@@ -56,20 +62,21 @@ public class GUI extends Thread{
         systemPanel.setMinimumSize(new Dimension(WINDOW_WIDTH - TABLE_WIDTH - 19, TABLE_HEIGHT));
         systemPanel.setPreferredSize(new Dimension(WINDOW_WIDTH - TABLE_WIDTH - 19, TABLE_HEIGHT));
 
-        selfPortSpinner.setValue(8000);
-        ((DefaultFormatter) ((JFormattedTextField) selfPortSpinner.getEditor().getComponent(0)).getFormatter()).setCommitsOnValidEdit(true);
-        selfPortSpinner.addChangeListener(e -> {
-            int port = (int) selfPortSpinner.getValue();
-            if (port > 65535) {
-                selfPortSpinner.setValue(65535);
-            } else if (port < 0) {
-                selfPortSpinner.setValue(0);
-            }
-        });
-
-        continueButton.addActionListener(e -> {
-            // TODO
-        });
+        for (JSpinner spinner : new JSpinner[] {
+                selfPortSpinner,
+                loadBalancerPortSpinner
+        }) {
+            spinner.setValue(8000);
+            ((DefaultFormatter) ((JFormattedTextField) spinner.getEditor().getComponent(0)).getFormatter()).setCommitsOnValidEdit(true);
+            spinner.addChangeListener(e -> {
+                int port = (int) spinner.getValue();
+                if (port > 65535) {
+                    spinner.setValue(65535);
+                } else if (port < 0) {
+                    spinner.setValue(0);
+                }
+            });
+        }
 
         systemListModel = new DefaultListModel<>();
         systemList.setModel(systemListModel);
@@ -77,40 +84,143 @@ public class GUI extends Thread{
 
         systemCountPanel.setBorder(new EmptyBorder(0, 0, 9, 0));
 
-        availableSystemCountLabel.setBorder(new EmptyBorder(0, 4, 0 ,0));
-        fullSystemCountLabel.setBorder(new EmptyBorder(0, 4, 0 ,0));
-        stoppedSystemCountLabel.setBorder(new EmptyBorder(0, 4, 0 ,0));
+        for (JLabel label : new JLabel[] {
+                availableSystemCountXLabel,
+                fullSystemCountXLabel,
+                stoppedSystemCountXLabel
+        }) {
+            label.setBorder(new EmptyBorder(0, 4, 0 ,0));
+        }
+
+        continueButton.addActionListener(e -> {
+            if (selfPortSpinner.getValue().equals(loadBalancerPortSpinner.getValue())) {
+                JOptionPane.showMessageDialog(null, "Ports can't be the same.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (serverDispatcher == null) {
+                serverDispatcher = new TServerDispatcher((int) selfPortSpinner.getValue(), (int) loadBalancerPortSpinner.getValue(), this);
+                serverDispatcher.start();
+            }
+        });
+
+        systemList.addListSelectionListener(e -> {
+            int serverId = Integer.parseInt(systemListModel.get(((ListSelectionModel) e.getSource()).getMinSelectionIndex())[2]);
+            requestTable.setModel((DefaultTableModel) requestTableModels.get(serverId)[1]);
+        });
     }
 
     public void run() {
         frame.setVisible(true);
         Object[] update;
+        DefaultTableModel tableModel;
+        int index;
+        int serverId;
+        int loadBalancerId;
+        int requestId;
+        boolean newRequest;
         try {
             while (true) {
                 update = updates.take();
                 requestTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-                boolean newRequest = true;
-                for (int i = 0; i < requestTableModel.getRowCount(); i++) {
-                    if (requestTableModel.getValueAt(i, 0).equals(update[0])) {
-                        for (int col = 0; col < 6; col++)
-                            requestTableModel.setValueAt(update[col], i, col);
-                        newRequest = false;
+                switch ((String) update[0]) {
+                    case "ADD_SERVER":
+                        serverId = (int) update[1];
+                        tableModel = new DefaultTableModel(new String[] {"Request", "Client", "Iterations", "Deadline", "Status", "PI"}, 0) {
+                            @Override
+                            public Class getColumnClass(int column) {
+                                return switch (column) {
+                                    case 4, 5 -> String.class;
+                                    default -> Integer.class;
+                                };
+                            }
+                        };
+                        index = systemListModel.getSize();
+                        systemListModel.add(index, new String[] {"Server ("+serverId+")", "Available", Integer.toString(serverId)});
+                        requestTableModels.put(serverId, new Object[] {index, tableModel});
+                        updateStatusCount("", "Available");
                         break;
-                    }
+                    case "UPDATE_SERVER_REQUEST":
+                        serverId = (int) update[1];
+                        requestId = (int) update[2];
+                        tableModel = (DefaultTableModel) requestTableModels.get(serverId)[1];
+                        newRequest = true;
+                        for (int i = 0; i < tableModel.getRowCount(); i++) {
+                            if (tableModel.getValueAt(i, 0).equals(requestId)) {
+                                for (int col = 2; col < update.length; col++)
+                                    if (update[col] != null)
+                                        tableModel.setValueAt(update[col], i, col);
+                                newRequest = false;
+                                break;
+                            }
+                        }
+                        if (newRequest)
+                            tableModel.addRow(Arrays.copyOfRange(update, 2, update.length));
+                        break;
+                    case "ADD_LOAD_BALANCER":
+                        loadBalancerId = (int) update[1];
+                        boolean primary = (boolean) update[2];
+                        tableModel = new DefaultTableModel(new String[] {"Request", "Client", "Iterations", "Deadline"}, 0) {
+                            @Override
+                            public Class getColumnClass(int column) {
+                                return Integer.class;
+                            }
+                        };
+                        index = systemListModel.getSize();
+                        systemListModel.add(index, new String[] {"Load balancer"+(primary ? " (Main)" : ""), "Available", Integer.toString(loadBalancerId)});
+                        requestTableModels.put(loadBalancerId, new Object[] {index, tableModel});
+                        updateStatusCount("", "Available");
+                        break;
+                    case "ADD_LOAD_BALANCER_REQUEST":
+                        loadBalancerId = (int) update[1];
+                        tableModel = (DefaultTableModel) requestTableModels.get(loadBalancerId)[1];
+                        tableModel.addRow(Arrays.copyOfRange(update, 2, update.length));
+                        break;
+                    case "REMOVE_LOAD_BALANCER_REQUEST":
+                        loadBalancerId = (int) update[1];
+                        requestId = (int) update[2];
+                        tableModel = (DefaultTableModel) requestTableModels.get(loadBalancerId)[1];
+                        for (int i = 0; i < tableModel.getRowCount(); i++) {
+                            if (tableModel.getValueAt(i, 0).equals(requestId)) {
+                                tableModel.removeRow(i);
+                                break;
+                            }
+                        }
+                        break;
+                    case "UPDATE_STATUS":
+                        int id = (int) update[0];
+                        String newStatus = (String) update[1];
+                        int listIndex = (Integer) requestTableModels.get(id)[0];
+                        String[] listElement = systemListModel.get(listIndex);
+                        String oldStatus = listElement[1];
+                        listElement[1] = newStatus;
+                        systemListModel.add(listIndex, listElement);
+                        updateStatusCount(oldStatus, newStatus);
+                        break;
                 }
-                if (newRequest)
-                    requestTableModel.addRow(update);
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
 
-    public void updateRequest(int requestId, int serverId, int iterations, int deadline, String status, String PI) {
+    public void addServer(int serverId) {
         try {
             updates.put(new Object[] {
-                    requestId,
+                    "ADD_SERVER",
+                    serverId
+            });
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void updateServerRequest(int serverId, int requestId, Integer clientId, Integer iterations, Integer deadline, String status, String PI) {
+        try {
+            updates.put(new Object[] {
+                    "UPDATE_SERVER_REQUEST",
                     serverId,
+                    requestId,
+                    clientId,
                     iterations,
                     deadline,
                     status,
@@ -121,18 +231,61 @@ public class GUI extends Thread{
         }
     }
 
-    public void setLoadBalancerPortValidity(boolean valid) {
-        if (!valid) {
-            // TODO
-            JOptionPane.showMessageDialog(null, "Connection to monitor port failed.", "Error", JOptionPane.ERROR_MESSAGE);
-        } else {
-            // TODO
+    public void addLoadBalancer(int loadBalancerId, boolean primary) {
+        try {
+            updates.put(new Object[] {
+                    "ADD_LOAD_BALANCER",
+                    loadBalancerId,
+                    primary
+            });
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void addLoadBalancerRequest(int loadBalancerId, int requestId, int clientId, int iterations, int deadline) {
+        try {
+            updates.put(new Object[] {
+                    "ADD_LOAD_BALANCER_REQUEST",
+                    loadBalancerId,
+                    requestId,
+                    clientId,
+                    iterations,
+                    deadline
+            });
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void removeLoadBalancerRequest(int loadBalancerId, int requestId) {
+        try {
+            updates.put(new Object[] {
+                    "REMOVE_LOAD_BALANCER_REQUEST",
+                    loadBalancerId,
+                    requestId
+            });
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void changeStatus(int id, String status) {
+        try {
+            updates.put(new Object[] {
+                    "CHANGE_STATUS",
+                    id,
+                    status
+            });
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
     public void setSelfPortValidity(boolean valid) {
         if (!valid) {
-            // TODO
+            serverDispatcher.interrupt();
+            serverDispatcher = null;
             JOptionPane.showMessageDialog(null, "Invalid self port.", "Error", JOptionPane.ERROR_MESSAGE);
         } else {
             frame.setTitle(TITLE + " (" + selfPortSpinner.getValue() + ")");
@@ -167,17 +320,32 @@ public class GUI extends Thread{
                 return component;
             }
         };
-        requestTableModel = new DefaultTableModel(new String[] {"Request", "Server", "Iterations", "Deadline", "Status", "PI"}, 0) {
-            @Override
-            public Class getColumnClass(int column) {
-                return switch (column) {
-                    case 4, 5 -> String.class;
-                    default -> Integer.class;
-                };
-            }
-        };
-        requestTable.setModel(requestTableModel);
         requestTable.getTableHeader().setReorderingAllowed(false);
+    }
+
+    private void updateStatusCount(String removed, String added) {
+        switch (removed) {
+            case "Available":
+                availableSystemCountLabel.setText(Integer.toString(Integer.parseInt(availableSystemCountLabel.getText())-1));
+                break;
+            case "Full":
+                fullSystemCountLabel.setText(Integer.toString(Integer.parseInt(fullSystemCountLabel.getText())-1));
+                break;
+            case "Stopped":
+                stoppedSystemCountLabel.setText(Integer.toString(Integer.parseInt(stoppedSystemCountLabel.getText())-1));
+                break;
+        }
+        switch (added) {
+            case "Available":
+                availableSystemCountLabel.setText(Integer.toString(Integer.parseInt(availableSystemCountLabel.getText())+1));
+                break;
+            case "Full":
+                fullSystemCountLabel.setText(Integer.toString(Integer.parseInt(fullSystemCountLabel.getText())+1));
+                break;
+            case "Stopped":
+                stoppedSystemCountLabel.setText(Integer.toString(Integer.parseInt(stoppedSystemCountLabel.getText())+1));
+                break;
+        }
     }
 
     public static void setGUILook(String[] wantedLooks) {

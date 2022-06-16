@@ -14,7 +14,6 @@ public class TServerDispatcher extends Thread {
     private ServerSocket serverSocket;
     private final int port;
     private final ReentrantLock rl;
-    //private TGUI gui; TODO: INSERT UI CLASS LATER
 
     public TServerDispatcher(int port, TWatcherContact watcherContact) {
         this.port = port;

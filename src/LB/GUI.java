@@ -7,11 +7,13 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.text.DefaultFormatter;
 import java.awt.*;
+import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class GUI extends Thread{
 
+    private TWatcherContact watcherContact;
     private final BlockingQueue<Object[]> updates = new LinkedBlockingQueue<>();
 
     private static final String TITLE = "Load balancer";
@@ -70,7 +72,10 @@ public class GUI extends Thread{
         }
 
         continueButton.addActionListener(e -> {
-            // TODO
+            if (watcherContact == null) {
+                watcherContact = new TWatcherContact((int) monitorPortSpinner.getValue(), (int) selfPortSpinner.getValue(), this);
+                watcherContact.start();
+            }
         });
     }
 
@@ -81,26 +86,32 @@ public class GUI extends Thread{
             while (true) {
                 update = updates.take();
                 requestTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-                boolean newRequest = true;
-                for (int i = 0; i < requestTableModel.getRowCount(); i++) {
-                    if (requestTableModel.getValueAt(i, 0).equals(update[0])) {
-                        for (int col = 0; col < 6; col++)
-                            requestTableModel.setValueAt(update[col], i, col);
-                        newRequest = false;
+                switch ((String) update[0]) {
+                    case "ADD_REQUEST":
+                        requestTableModel.addRow(Arrays.copyOfRange(update, 1, update.length));
+                    case "REMOVE_REQUEST":
+                        for (int i = 0; i < requestTableModel.getRowCount(); i++) {
+                            if (requestTableModel.getValueAt(i, 0).equals(update[1])) {
+                                requestTableModel.removeRow(i);
+                                break;
+                            }
+                        }
                         break;
-                    }
+                    case "SERVER_COUNTS":
+                        availableServerCount.setText("x"+((int) update[1]));
+                        fullServerCount.setText("x"+((int) update[2]));
+                        break;
                 }
-                if (newRequest)
-                    requestTableModel.addRow(update);
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
 
-    public void updateRequest(int requestId, int clientId, int iterations, int deadline) {
+    public void addRequest(int requestId, int clientId, int iterations, int deadline) {
         try {
             updates.put(new Object[] {
+                    "ADD_REQUEST",
                     requestId,
                     clientId,
                     iterations,
@@ -111,23 +122,40 @@ public class GUI extends Thread{
         }
     }
 
-    public void setMonitorPortValidity(boolean valid) {
-        if (!valid) {
-            // TODO
-            JOptionPane.showMessageDialog(null, "Connection to monitor port failed.", "Error", JOptionPane.ERROR_MESSAGE);
-        } else {
-            // TODO
+    public void removeRequest(int requestId) {
+        try {
+            updates.put(new Object[] {
+                    "REMOVE_REQUEST",
+                    requestId
+            });
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
-    public void setSelfPortValidity(boolean valid) {
+    public void setServerCounts(int available, int full) {
+        try {
+            updates.put(new Object[] {
+                    "SERVER_COUNTS",
+                    available,
+                    full
+            });
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void setMonitorPortValidity(boolean valid) {
         if (!valid) {
-            // TODO
-            JOptionPane.showMessageDialog(null, "Invalid self port.", "Error", JOptionPane.ERROR_MESSAGE);
+            watcherContact = null;
+            JOptionPane.showMessageDialog(null, "Connection to monitor port failed.", "Error", JOptionPane.ERROR_MESSAGE);
         } else {
-            frame.setTitle(TITLE + " (" + selfPortSpinner.getValue() + ")"); // TODO
             ((CardLayout) cardPanel.getLayout()).next(cardPanel);
         }
+    }
+
+    public void setSelfMain() {
+        frame.setTitle(TITLE + " (Main)");
     }
 
     private void createUIComponents() {

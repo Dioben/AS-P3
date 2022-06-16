@@ -40,7 +40,7 @@ public class TCommsDirector extends Thread{
             } catch (Exception e) {}
         }else{
             try{
-                Socket cancel = new Socket("localhost",port);
+                Socket cancel = new Socket("localhost",port); // TODO: get client port
                 PrintWriter out = new PrintWriter(cancel.getOutputStream());
                 String[] data = inputLine.split("\\|");
                 data[2] = "-1";
