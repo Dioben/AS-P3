@@ -59,10 +59,10 @@ public class GUI extends Thread{
                 loadBalancerPortSpinner
         }) {
             spinner.setValue(8000);
-            setSpinnerMinMax(spinner, 0, 65535);
+            setSpinnerMinMax(spinner, 1, 65535);
         }
-        setSpinnerMinMax(iterationsSpinner, 0, 20);
-        setSpinnerMinMax(deadlineSpinner, 0, Integer.MAX_VALUE);
+        setSpinnerMinMax(iterationsSpinner, 1, 20);
+        setSpinnerMinMax(deadlineSpinner, 1, Integer.MAX_VALUE);
 
         continueButton.addActionListener(e -> {
             if (comms == null) {

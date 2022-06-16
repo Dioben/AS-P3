@@ -65,8 +65,8 @@ public class GUI extends Thread{
                 int port = (int) spinner.getValue();
                 if (port > 65535) {
                     spinner.setValue(65535);
-                } else if (port < 0) {
-                    spinner.setValue(0);
+                } else if (port < 1) {
+                    spinner.setValue(1);
                 }
             });
         }
