@@ -5,6 +5,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
+import javax.swing.table.TableColumnModel;
 import javax.swing.text.DefaultFormatter;
 import java.awt.*;
 import java.util.Arrays;
@@ -86,7 +87,6 @@ public class GUI extends Thread{
         try {
             while (true) {
                 update = updates.take();
-                requestTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
                 switch ((String) update[0]) {
                     case "ADD_REQUEST":
                         requestTableModel.addRow(Arrays.copyOfRange(update, 1, update.length));
@@ -179,6 +179,10 @@ public class GUI extends Thread{
         };
         requestTable.setModel(requestTableModel);
         requestTable.getTableHeader().setReorderingAllowed(false);
+
+        TableColumnModel columnModel = requestTable.getColumnModel();
+        for (int i = 0; i < requestTable.getColumnCount(); i++)
+            columnModel.getColumn(i).setMinWidth(TABLE_WIDTH/4);
     }
 
     public static void setGUILook(String[] wantedLooks) {

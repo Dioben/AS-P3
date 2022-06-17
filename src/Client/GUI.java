@@ -5,6 +5,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
+import javax.swing.table.TableColumnModel;
 import javax.swing.text.DefaultFormatter;
 import java.awt.*;
 import java.util.concurrent.BlockingQueue;
@@ -51,7 +52,7 @@ public class GUI extends Thread{
         requestTableScrollPane.setMinimumSize(new Dimension(TABLE_WIDTH, TABLE_HEIGHT));
         requestTableScrollPane.setPreferredSize(new Dimension(TABLE_WIDTH, TABLE_HEIGHT));
 
-        requestFormPanel.setMinimumSize(new Dimension(WINDOW_WIDTH - TABLE_WIDTH - 28, TABLE_HEIGHT));
+        requestFormPanel.setMinimumSize(new Dimension(WINDOW_WIDTH - TABLE_WIDTH - 29, TABLE_HEIGHT));
         requestFormPanel.setBorder(new EmptyBorder(0, 16, 8, 8));
 
         for (JSpinner spinner : new JSpinner[] {
@@ -86,7 +87,6 @@ public class GUI extends Thread{
         try {
             while (true) {
                 update = updates.take();
-                requestTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
                 boolean newRequest = true;
                 for (int i = 0; i < requestTableModel.getRowCount(); i++) {
                     if (requestTableModel.getValueAt(i, 0).equals(update[0])) {
@@ -168,6 +168,10 @@ public class GUI extends Thread{
         };
         requestTable.setModel(requestTableModel);
         requestTable.getTableHeader().setReorderingAllowed(false);
+
+        TableColumnModel columnModel = requestTable.getColumnModel();
+        for (int i = 0; i < requestTable.getColumnCount(); i++)
+            columnModel.getColumn(i).setMinWidth(TABLE_WIDTH/6);
     }
 
     public static void setGUILook(String[] wantedLooks) {

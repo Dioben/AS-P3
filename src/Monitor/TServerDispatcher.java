@@ -160,13 +160,13 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
     @Override
     public void notifyRefused(int port, int request){
         removeRequestFromServerPending(port, request);
-        gui.updateServerRequest(port, request, null, null, null, "Rejected", null);
+        gui.updateServerRequest(port, request, null, null, null, "Rejected");
     }
 
     @Override
     public void notifyDone(int port, int request){
         removeRequestFromServerPending(port, request);
-        gui.updateServerRequest(port, request, null, null, null, "Finished", null);
+        gui.updateServerRequest(port, request, null, null, null, "Finished");
     }
     private void removeRequestFromServerPending(int port, int request) {
         rl.lock();

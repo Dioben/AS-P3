@@ -124,7 +124,7 @@
                   <component id="a5088" class="javax.swing.JTable" binding="requestTable" custom-create="true">
                     <constraints/>
                     <properties>
-                      <autoResizeMode value="4"/>
+                      <autoResizeMode value="0"/>
                       <enabled value="false"/>
                       <fillsViewportHeight value="false"/>
                       <rowSelectionAllowed value="false"/>

@@ -4,6 +4,7 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
+import javax.swing.table.TableColumnModel;
 import javax.swing.text.DefaultFormatter;
 import java.awt.*;
 import java.util.concurrent.BlockingQueue;
@@ -19,7 +20,7 @@ public class GUI extends Thread{
     private static final int WINDOW_HEIGHT = 256;
     private static final int TABLE_WIDTH = WINDOW_WIDTH-16;
     private static final int TABLE_HEIGHT = WINDOW_HEIGHT-32;
-    private int PICellWidth = TABLE_WIDTH/6;
+    private int PICellWidth = (TABLE_WIDTH/6)-3;
 
     private final JFrame frame;
     private JPanel mainPanel;
@@ -75,7 +76,6 @@ public class GUI extends Thread{
         try {
             while (true) {
                 update = updates.take();
-                requestTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
                 boolean newRequest = true;
                 for (int i = 0; i < requestTableModel.getRowCount(); i++) {
                     if (requestTableModel.getValueAt(i, 0).equals(update[0])) {
@@ -139,9 +139,6 @@ public class GUI extends Thread{
                     TableColumn tableColumn = getColumnModel().getColumn(column);
                     PICellWidth = Math.max(rendererWidth + getIntercellSpacing().width, PICellWidth);
                     tableColumn.setPreferredWidth(PICellWidth);
-                } else {
-                    TableColumn tableColumn = getColumnModel().getColumn(column);
-                    tableColumn.setPreferredWidth(TABLE_WIDTH/6);
                 }
 
                 // Color rows based on a cell value
@@ -165,6 +162,11 @@ public class GUI extends Thread{
         };
         requestTable.setModel(requestTableModel);
         requestTable.getTableHeader().setReorderingAllowed(false);
+
+        TableColumnModel columnModel = requestTable.getColumnModel();
+        for (int i = 0; i < requestTable.getColumnCount()-1; i++)
+            columnModel.getColumn(i).setMinWidth(TABLE_WIDTH/6);
+        columnModel.getColumn(5).setMinWidth((TABLE_WIDTH/6)-3);
     }
 
     public static void setGUILook(String[] wantedLooks) {

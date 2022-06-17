@@ -5,6 +5,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
+import javax.swing.table.TableColumnModel;
 import javax.swing.text.DefaultFormatter;
 import java.awt.*;
 import java.util.Arrays;
@@ -20,11 +21,11 @@ public class GUI extends Thread{
     private final DefaultListModel<String[]> systemListModel;
 
     private static final String TITLE = "Monitor";
-    private static final int WINDOW_WIDTH = 768;
+    private static final int WINDOW_WIDTH = 686;
     private static final int WINDOW_HEIGHT = 256;
-    private static final int TABLE_WIDTH = 496;
+    private static final int TABLE_WIDTH = 414;
     private static final int TABLE_HEIGHT = WINDOW_HEIGHT-32;
-    private int PICellWidth = TABLE_WIDTH/6;
+    private int PICellWidth = TABLE_WIDTH/5;
 
     private final JFrame frame;
     private JPanel mainPanel;
@@ -106,7 +107,12 @@ public class GUI extends Thread{
 
         systemList.addListSelectionListener(e -> {
             int serverId = Integer.parseInt(systemListModel.get(((JList<?>) e.getSource()).getMinSelectionIndex())[2]);
-            requestTable.setModel((DefaultTableModel) requestTableModels.get(serverId)[1]);
+            DefaultTableModel tableModel = (DefaultTableModel) requestTableModels.get(serverId)[1];
+            requestTable.setModel(tableModel);
+
+            TableColumnModel columnModel = requestTable.getColumnModel();
+            for (int i = 0; i < requestTable.getColumnCount(); i++)
+                columnModel.getColumn(i).setMinWidth(TABLE_WIDTH/5);
         });
     }
 
@@ -123,7 +129,6 @@ public class GUI extends Thread{
         try {
             while (true) {
                 update = updates.take();
-                requestTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
                 switch ((String) update[0]) {
                     case "ADD_SERVER":
                         serverId = (int) update[1];
@@ -135,11 +140,11 @@ public class GUI extends Thread{
                             }
                         }
                         if (newSystem) {
-                            tableModel = new DefaultTableModel(new String[] {"Request", "Client", "Iterations", "Deadline", "Status", "PI"}, 0) {
+                            tableModel = new DefaultTableModel(new String[] {"Request", "Client", "Iterations", "Deadline", "Status"}, 0) {
                                 @Override
                                 public Class getColumnClass(int column) {
                                     return switch (column) {
-                                        case 4, 5 -> String.class;
+                                        case 4 -> String.class;
                                         default -> Integer.class;
                                     };
                                 }
@@ -171,7 +176,6 @@ public class GUI extends Thread{
                         loadBalancerId = (int) update[1];
                         newSystem = true;
                         for (int i = 0; i < systemListModel.getSize(); i++) {
-                            System.out.println(systemListModel.get(i)[2]);
                             if (loadBalancerId == Integer.parseInt(systemListModel.get(i)[2])) {
                                 newSystem = false;
                                 break;
@@ -209,22 +213,21 @@ public class GUI extends Thread{
                                         tableModel.getValueAt(i, 1),
                                         tableModel.getValueAt(i, 2),
                                         tableModel.getValueAt(i, 3),
-                                        "Pending",
-                                        null
+                                        "Pending"
                                 });
                                 tableModel.removeRow(i);
                                 break;
                             }
                         }
                         break;
-                    case "UPDATE_STATUS":
-                        int id = (int) update[0];
-                        String newStatus = (String) update[1];
+                    case "CHANGE_STATUS":
+                        int id = (int) update[1];
+                        String newStatus = (String) update[2];
                         int listIndex = (Integer) requestTableModels.get(id)[0];
                         String[] listElement = systemListModel.get(listIndex);
                         String oldStatus = listElement[1];
                         listElement[1] = newStatus;
-                        systemListModel.add(listIndex, listElement);
+                        systemListModel.set(listIndex, listElement);
                         updateStatusCount(oldStatus, newStatus);
                         break;
                 }
@@ -245,7 +248,7 @@ public class GUI extends Thread{
         }
     }
 
-    public void updateServerRequest(int serverId, int requestId, Integer clientId, Integer iterations, Integer deadline, String status, String PI) {
+    public void updateServerRequest(int serverId, int requestId, Integer clientId, Integer iterations, Integer deadline, String status) {
         try {
             updates.put(new Object[] {
                     "UPDATE_SERVER_REQUEST",
@@ -254,8 +257,7 @@ public class GUI extends Thread{
                     clientId,
                     iterations,
                     deadline,
-                    status,
-                    PI
+                    status
             });
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -339,7 +341,7 @@ public class GUI extends Thread{
                     tableColumn.setPreferredWidth(PICellWidth);
                 } else {
                     TableColumn tableColumn = getColumnModel().getColumn(column);
-                    tableColumn.setPreferredWidth(TABLE_WIDTH/6);
+                    tableColumn.setPreferredWidth(TABLE_WIDTH/5);
                 }
 
                 // Color rows based on a cell value

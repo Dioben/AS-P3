@@ -49,7 +49,7 @@ public class TBackendMonitor extends  Thread{
         while (true){
             try {
                 parseServerInput(handler,in.readLine());
-            } catch (IOException e) {
+            } catch (IOException | NullPointerException e) {
                 handler.removeServer(port);
                 try{
                     in.close();
@@ -79,7 +79,7 @@ public class TBackendMonitor extends  Thread{
         while (true){
             try {
                 parseLoadBalancerInput(handler,in.readLine());
-            } catch (IOException e) {
+            } catch (IOException | NullPointerException e) {
                 handler.removeLoadBalancer(port);
                 try {
                     in.close();
