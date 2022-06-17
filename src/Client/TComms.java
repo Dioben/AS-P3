@@ -18,13 +18,22 @@ public class TComms extends Thread implements IRegisterMessage, ISender {
     private final ReentrantLock sendlock = new ReentrantLock();
     private GUI gui;
 
-
+    /**
+     * Constructor for comms class
+     * @param selfPort Port we listen on
+     * @param outPort Port we send data to
+     * @param gui Class that receives our UI updates
+     */
     TComms(int selfPort, int outPort, GUI gui) {
         this.selfPort = selfPort;
         this.outPort = outPort;
         this.gui = gui;
     }
 
+    /**
+     * Launches on selected port<br>
+     * If port is valid class becomes available for request sending
+     */
     @Override
     public void run() {
         try {
@@ -39,6 +48,11 @@ public class TComms extends Thread implements IRegisterMessage, ISender {
         }
     }
 
+    /**
+     * Send a request to processing server
+     * @param precision number of decimal places
+     * @param deadline processing deadline
+     */
     @Override
     public void sendRequest(int precision, int deadline){
         try {
@@ -60,10 +74,21 @@ public class TComms extends Thread implements IRegisterMessage, ISender {
         } catch (IOException e) {}
     }
 
+    /**
+     * Register a declined message on the UI
+     * @param ID
+     * @param server
+     */
     @Override
     public void registerDecline(int ID, int server){
         gui.updateRequest(ID, server, null, null, "Rejected", null);
     }
+
+    /**
+     * Register a completed request on the UI
+     * @param ID
+     * @param server
+     */
     @Override
     public void registerResponse(int ID,int server, String response){
         gui.updateRequest(ID, server, null, null, "Finished", response);
