@@ -25,6 +25,7 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
     private final List<LoadBalancerHolder> loadBalancers = new ArrayList<LoadBalancerHolder>();
     private List<Request> awaitingDispatch = new ArrayList<>();
     private final Map<Integer,List<Request>> awaitingResolution = new HashMap<>();
+    private InitLB lbInitThread;
 
 
     private GUI gui;
@@ -83,8 +84,8 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
         }
         rl.unlock();
         if (primary){
-            holder.shiftToPrimaryLoadBalancer(loadBalancerPrimaryPort);
-            sendRequestsToPrimaryLB(awaitingDispatch);
+            lbInitThread = new InitLB(holder);
+            lbInitThread.start();
         }
         gui.addLoadBalancer(port, primary);
         return allowed;
@@ -105,8 +106,8 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
             hld = loadBalancers.get(0);
         rl.unlock();
         if (hld!=null){
-            hld.getMngThread().shiftToPrimaryLoadBalancer(loadBalancerPrimaryPort); //long operation, avoid doing it in lock
-            sendRequestsToPrimaryLB(awaitingDispatch);
+            lbInitThread = new InitLB(hld.getMngThread());
+            lbInitThread.start();
         }
         gui.changeStatus(port, "Stopped");
     }
@@ -226,6 +227,18 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
         return this;
     }
 
+    private class InitLB extends Thread{
+        private final TBackendMonitor lbContact;
+        InitLB(TBackendMonitor holder){
+            lbContact = holder;
+        }
+
+        @Override
+        public void run() {
+            lbContact.shiftToPrimaryLoadBalancer(loadBalancerPrimaryPort);
+            sendRequestsToPrimaryLB(awaitingDispatch);
+        }
+    }
 
 }
 
