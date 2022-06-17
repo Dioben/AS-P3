@@ -130,6 +130,8 @@ public class TWatcherContact extends Thread implements IMonitorInfoContact {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+                if (content == null)
+                    System.exit(1);
                 if (content.startsWith("TAKEOVER")){
                     parent.setPrimary(Integer.parseInt(content.split(" ")[1]) );
                     break;

@@ -135,6 +135,7 @@ public class GUI extends Thread{
                         newSystem = true;
                         for (int i = 0; i < systemListModel.getSize(); i++) {
                             if (serverId == Integer.parseInt(systemListModel.get(i)[2])) {
+                                systemListModel.set(i, new String[] {"Server ("+serverId+")", "Available", Integer.toString(serverId)});
                                 newSystem = false;
                                 break;
                             }
@@ -174,15 +175,16 @@ public class GUI extends Thread{
                         break;
                     case "ADD_LOAD_BALANCER":
                         loadBalancerId = (int) update[1];
+                        boolean primary = (boolean) update[2];
                         newSystem = true;
                         for (int i = 0; i < systemListModel.getSize(); i++) {
                             if (loadBalancerId == Integer.parseInt(systemListModel.get(i)[2])) {
+                                systemListModel.set(i, new String[] {"Load balancer"+(primary ? " (Main)" : ""), "Available", Integer.toString(loadBalancerId)});
                                 newSystem = false;
                                 break;
                             }
                         }
                         if (newSystem) {
-                            boolean primary = (boolean) update[2];
                             tableModel = new DefaultTableModel(new String[] {"Request", "Client", "Iterations", "Deadline"}, 0) {
                                 @Override
                                 public Class getColumnClass(int column) {

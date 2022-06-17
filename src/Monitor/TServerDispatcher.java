@@ -81,13 +81,13 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
             if (loadBalancers.size()==1){
                 primary=true;
             }
+            gui.addLoadBalancer(port, primary);
         }
         rl.unlock();
         if (primary){
             lbInitThread = new InitLB(holder);
             lbInitThread.start();
         }
-        gui.addLoadBalancer(port, primary);
         return allowed;
     }
 
@@ -95,7 +95,8 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
     public void removeLoadBalancer(int port){
         LoadBalancerHolder hld = null;
         rl.lock();
-        for (int i = 0;i<loadBalancers.size();i++){
+        int currentSize = loadBalancers.size();
+        for (int i = 0;i<currentSize;i++){
             LoadBalancerHolder lb = loadBalancers.get(i);
             if (lb.getPort()==port){
                 loadBalancers.remove(i);
@@ -108,6 +109,7 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
         if (hld!=null){
             lbInitThread = new InitLB(hld.getMngThread());
             lbInitThread.start();
+            gui.addLoadBalancer(hld.getPort(), true);
         }
         gui.changeStatus(port, "Stopped");
     }
