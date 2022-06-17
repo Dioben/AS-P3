@@ -79,12 +79,19 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
         }else if( waiting.size() <MAX_PENDING){
             if (complexityLoad+request.getPrecision()<=MAX_COMPLEXITY){
                 //keep pending sorted
-                if (waiting.size()!=0 && waiting.get(0).getDeadline()>request.getDeadline()){
-                    waiting.add(0,request);
+                int size = waiting.size();
+                int i = 0;
+                for(;i<size;i++){
+                    if (waiting.get(i).getDeadline()>request.getDeadline()){
+                        waiting.add(i,request);
+                        break;
+                    }
                 }
-                else{
+                if (i==size){
                     waiting.add(request);
                 }
+
+
                 complexityLoad+=request.getPrecision();
                 rl.unlock();
             }else{
@@ -96,7 +103,7 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
         else{ //one of the pending requests may be swapped out, keep complexity load maximum and scheduling policy in mind
             for(int i = 0;i<MAX_PENDING;i++){
                 QueuedRequest queued = waiting.get(i);
-                if (request.getDeadline()>queued.getDeadline() &&  (request.getPrecision()+complexityLoad-queued.getPrecision() ) <=MAX_COMPLEXITY ){
+                if (request.getDeadline()<queued.getDeadline() &&  (request.getPrecision()+complexityLoad-queued.getPrecision() ) <=MAX_COMPLEXITY ){
                     waiting.set(i, request);
                     refused++;
                     complexityLoad+= request.getPrecision()-queued.getPrecision();

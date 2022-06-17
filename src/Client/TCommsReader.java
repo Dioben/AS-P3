@@ -4,17 +4,29 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.Socket;
 
+/**
+ * Class responsible for reading socket input
+ */
 public class TCommsReader extends Thread{
     private final Socket comms;
     private final IRegisterMessage parent;
     private final  int ID;
 
+    /**
+     *
+     * @param accept Communication socket
+     * @param ID Communication numeric ID
+     * @param registry Interface that messages are reported to
+     */
     public TCommsReader(Socket accept,int ID, IRegisterMessage registry) {
     comms = accept;
     parent = registry;
     this.ID = ID;
     }
 
+    /**
+     * Reads a single message, updates registry and exits
+     */
     @Override
     public void run() {
         try{
