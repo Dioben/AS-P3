@@ -162,6 +162,10 @@ public class GUI extends Thread{
         frame.setTitle(TITLE + " (Main)");
     }
 
+    public void showErrorMessage(String message) {
+        JOptionPane.showMessageDialog(null, message, "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
     private void createUIComponents() {
         requestTable = new JTable() {
             @Override

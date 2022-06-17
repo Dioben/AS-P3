@@ -70,6 +70,10 @@ public class GUI extends Thread{
         deadlineSpinner.setValue(1);
 
         continueButton.addActionListener(e -> {
+            if (selfPortSpinner.getValue().equals(loadBalancerPortSpinner.getValue())) {
+                JOptionPane.showMessageDialog(null, "Ports can't be the same.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
             if (comms == null) {
                 comms = new TComms((int) selfPortSpinner.getValue(), (int) loadBalancerPortSpinner.getValue(), this);
                 comms.start();
@@ -128,6 +132,10 @@ public class GUI extends Thread{
             frame.setTitle(TITLE + " (" + selfPortSpinner.getValue() + ")");
             ((CardLayout) cardPanel.getLayout()).next(cardPanel);
         }
+    }
+
+    public void showErrorMessage(String message) {
+        JOptionPane.showMessageDialog(null, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
     private void createUIComponents() {

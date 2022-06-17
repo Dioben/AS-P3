@@ -71,7 +71,9 @@ public class TComms extends Thread implements IRegisterMessage, ISender {
             out.println(msg);
             out.close();
             ext.close();
-        } catch (IOException e) {}
+        } catch (IOException e) {
+            gui.showErrorMessage("Could not connect to load balancer.");
+        }
     }
 
     /**

@@ -65,6 +65,10 @@ public class GUI extends Thread{
         monitorPortSpinner.setValue(8000);
 
         continueButton.addActionListener(e -> {
+            if (selfPortSpinner.getValue().equals(monitorPortSpinner.getValue())) {
+                JOptionPane.showMessageDialog(null, "Ports can't be the same.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
             if (serverDispatcher == null)
                 serverDispatcher = new TServerDispatcher((int) selfPortSpinner.getValue(), (int) monitorPortSpinner.getValue(), this);
         });

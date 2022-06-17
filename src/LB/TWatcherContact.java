@@ -108,7 +108,7 @@ public class TWatcherContact extends Thread implements IMonitorInfoContact {
     private void setPrimary(int port) {
         if (isPrimary)
             throw new RuntimeException("Assigned Primary to same entity twice");
-        new TServerDispatcher(port,this).start();
+        new TServerDispatcher(port,this, gui).start();
         this.isPrimary = true;
         gui.setSelfMain();
     }
