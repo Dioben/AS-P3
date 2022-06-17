@@ -22,7 +22,7 @@ public class TWatcherContact extends Thread{
     @Override
     public void run() {
         try {
-            Socket watcherSocket = new Socket("localhost",watcherPort); //TODO: MAYBE GENERIC THIS TO NOT ONLY LH
+            Socket watcherSocket = new Socket("localhost",watcherPort);
             gui.setMonitorPortValidity(true);
             out = new PrintWriter(watcherSocket.getOutputStream(), true);
 

@@ -96,7 +96,7 @@ public class TBackendMonitor extends  Thread{
         String[] request = line.split("\\|");
         int port = Integer.parseInt(request[1]);
         int complexity = Integer.parseInt(request[3]);
-        handler.registerServer(port,complexity); // TODO: why do we ignore number of requests (request[2])?
+        handler.registerServer(port,complexity);
 
         if (request[0].equals("SR")){//refusal
             handler.notifyRefused(Integer.parseInt(request[1]),Integer.parseInt(request[request.length-1]) );
