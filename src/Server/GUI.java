@@ -61,7 +61,7 @@ public class GUI extends Thread{
                 }
             });
         }
-        selfPortSpinner.setValue(8200);
+        selfPortSpinner.setValue(8100);
         monitorPortSpinner.setValue(8000);
 
         continueButton.addActionListener(e -> {

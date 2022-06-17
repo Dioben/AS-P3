@@ -17,7 +17,7 @@ public class GUI extends Thread{
     private TWatcherContact watcherContact;
     private final BlockingQueue<Object[]> updates = new LinkedBlockingQueue<>();
 
-    private static final String TITLE = "Load balancer";
+    private static String TITLE = "Load balancer";
     private static final int WINDOW_WIDTH = 432;
     private static final int WINDOW_HEIGHT = 256;
     private static final int TABLE_WIDTH = WINDOW_WIDTH-101;
@@ -70,12 +70,13 @@ public class GUI extends Thread{
                 }
             });
         }
-        selfPortSpinner.setValue(8100);
+        selfPortSpinner.setValue(1);
         monitorPortSpinner.setValue(8000);
 
         continueButton.addActionListener(e -> {
             if (watcherContact == null) {
-                watcherContact = new TWatcherContact((int) monitorPortSpinner.getValue(), (int) selfPortSpinner.getValue(), this);
+                // Self port is actually just an ID, made it negative so it never conflicts with ports
+                watcherContact = new TWatcherContact((int) monitorPortSpinner.getValue(), ((int) selfPortSpinner.getValue())*-1, this);
                 watcherContact.start();
             }
         });
@@ -151,6 +152,8 @@ public class GUI extends Thread{
             watcherContact = null;
             JOptionPane.showMessageDialog(null, "Connection to monitor port failed.", "Error", JOptionPane.ERROR_MESSAGE);
         } else {
+            TITLE += " ("+ selfPortSpinner.getValue() +")";
+            frame.setTitle(TITLE);
             ((CardLayout) cardPanel.getLayout()).next(cardPanel);
         }
     }

@@ -61,7 +61,7 @@ public class GUI extends Thread{
         }) {
             setSpinnerMinMax(spinner, 1, 65535);
         }
-        selfPortSpinner.setValue(8300);
+        selfPortSpinner.setValue(8200);
         loadBalancerPortSpinner.setValue(8001);
         
         setSpinnerMinMax(iterationsSpinner, 1, 13);

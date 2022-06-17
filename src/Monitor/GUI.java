@@ -179,7 +179,7 @@ public class GUI extends Thread{
                         newSystem = true;
                         for (int i = 0; i < systemListModel.getSize(); i++) {
                             if (loadBalancerId == Integer.parseInt(systemListModel.get(i)[2])) {
-                                systemListModel.set(i, new String[] {"Load balancer"+(primary ? " (Main)" : ""), "Available", Integer.toString(loadBalancerId)});
+                                systemListModel.set(i, new String[] {"Load balancer ("+Math.abs(loadBalancerId)+")"+(primary ? " (Main)" : ""), "Available", Integer.toString(loadBalancerId)});
                                 newSystem = false;
                                 break;
                             }
@@ -192,7 +192,7 @@ public class GUI extends Thread{
                                 }
                             };
                             index = systemListModel.getSize();
-                            systemListModel.add(index, new String[] {"Load balancer"+(primary ? " (Main)" : ""), "Available", Integer.toString(loadBalancerId)});
+                            systemListModel.add(index, new String[] {"Load balancer ("+Math.abs(loadBalancerId)+")"+(primary ? " (Main)" : ""), "Available", Integer.toString(loadBalancerId)});
                             requestTableModels.put(loadBalancerId, new Object[] {index, tableModel});
                             updateStatusCount("", "Available");
                         }
