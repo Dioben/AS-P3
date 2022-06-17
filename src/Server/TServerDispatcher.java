@@ -60,16 +60,18 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
             reportRefusal(request);
             return;
         }
+        gui.updateRequest(request.getRequestID(), request.getReturnPort(), request.getPrecision(), request.getDeadline(), "Pending", "");
         rl.lock();
 
-        gui.updateRequest(request.getRequestID(), request.getReturnPort(), request.getPrecision(), request.getDeadline(), "Pending", "");
         if (threadsRunning<MAX_THREADS){
             if (complexityLoad+request.getPrecision()<=MAX_COMPLEXITY){
                 threadsRunning++;
                 complexityLoad+=request.getPrecision();
+                rl.unlock();
                 new TSolver(request,this,port).start();
             }else{
                 refused++;
+                rl.unlock();
                 reportRefusal(request);
             }
 
@@ -84,8 +86,10 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
                     waiting.add(request);
                 }
                 complexityLoad+=request.getPrecision();
+                rl.unlock();
             }else{
                 refused++;
+                rl.unlock();
                 reportRefusal(request);
             }
         }
@@ -94,13 +98,20 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
                 QueuedRequest queued = waiting.get(i);
                 if (request.getDeadline()>queued.getDeadline() &&  (request.getPrecision()+complexityLoad-queued.getPrecision() ) <=MAX_COMPLEXITY ){
                     waiting.set(i, request);
+                    refused++;
+                    complexityLoad+= request.getPrecision()-queued.getPrecision();
+                    rl.unlock();
                     reportRefusal(queued);
                     break;
+                }
+                if (i==MAX_PENDING-1){
+                    refused++;
+                    rl.unlock();
+                    reportRefusal(request);
                 }
             }
 
         }
-        rl.unlock();
     }
 
     public void onRequestCompletion(QueuedRequest request,String result){
