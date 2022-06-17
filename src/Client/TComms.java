@@ -76,8 +76,8 @@ public class TComms extends Thread implements IRegisterMessage, ISender {
 
     /**
      * Register a declined message on the UI
-     * @param ID
-     * @param server
+     * @param ID Request ID
+     * @param server Server ID
      */
     @Override
     public void registerDecline(int ID, int server){
@@ -86,8 +86,9 @@ public class TComms extends Thread implements IRegisterMessage, ISender {
 
     /**
      * Register a completed request on the UI
-     * @param ID
-     * @param server
+     * @param ID Request ID
+     * @param server Server ID
+     * @param response Response Data
      */
     @Override
     public void registerResponse(int ID,int server, String response){
