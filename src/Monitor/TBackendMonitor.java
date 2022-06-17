@@ -38,7 +38,9 @@ public class TBackendMonitor extends  Thread{
             else if (inputLine.startsWith("LB")){
                 handleLoadBalancer(parent.getLoadBalancerHandler(),inputLine);
             }
-        } catch (IOException e) {}
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void handleServer(IServerHandler handler, String request){
@@ -63,7 +65,7 @@ public class TBackendMonitor extends  Thread{
 
     private void handleLoadBalancer(ILoadBalancerHandler handler, String request) {
         isLoadBalancer = true;
-        if (!request.startsWith("LB|")) //basic keepalive rather than advanced message
+        if (!request.startsWith("LB|") && !activatedPrimary) //basic keepalive rather than advanced message
             throw new RuntimeException("Load Balancer is asking for information before primary");
         int port = Integer.parseInt(request.split("\\|")[1]);
         if (!handler.registerLoadBalancer(port,this)){

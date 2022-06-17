@@ -62,7 +62,9 @@ public class GUI extends Thread{
             setSpinnerMinMax(spinner, 1, 65535);
         }
         setSpinnerMinMax(iterationsSpinner, 1, 20);
+        iterationsSpinner.setValue(1);
         setSpinnerMinMax(deadlineSpinner, 1, Integer.MAX_VALUE);
+        deadlineSpinner.setValue(1);
 
         continueButton.addActionListener(e -> {
             if (comms == null) {

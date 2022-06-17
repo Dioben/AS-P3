@@ -125,7 +125,7 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
         try {
             Socket res = new Socket("localhost",request.getReturnPort());
             PrintWriter out = new PrintWriter(res.getOutputStream(), true);
-            out.println(String.format("%d|%d|%d|02|%d|%d|%d", request.getReturnPort(),
+            out.println(String.format("%d|%d|%d|02|%d|%s|%d", request.getReturnPort(),
                     request.getRequestID(),
                     this.port,
                     request.getPrecision(),

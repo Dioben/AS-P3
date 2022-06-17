@@ -104,7 +104,7 @@ public class GUI extends Thread{
         });
 
         systemList.addListSelectionListener(e -> {
-            int serverId = Integer.parseInt(systemListModel.get(((ListSelectionModel) e.getSource()).getMinSelectionIndex())[2]);
+            int serverId = Integer.parseInt(systemListModel.get(((JList<?>) e.getSource()).getMinSelectionIndex())[2]);
             requestTable.setModel((DefaultTableModel) requestTableModels.get(serverId)[1]);
         });
     }
@@ -118,6 +118,7 @@ public class GUI extends Thread{
         int loadBalancerId;
         int requestId;
         boolean newRequest;
+        boolean newSystem;
         try {
             while (true) {
                 update = updates.take();
@@ -125,19 +126,28 @@ public class GUI extends Thread{
                 switch ((String) update[0]) {
                     case "ADD_SERVER":
                         serverId = (int) update[1];
-                        tableModel = new DefaultTableModel(new String[] {"Request", "Client", "Iterations", "Deadline", "Status", "PI"}, 0) {
-                            @Override
-                            public Class getColumnClass(int column) {
-                                return switch (column) {
-                                    case 4, 5 -> String.class;
-                                    default -> Integer.class;
-                                };
+                        newSystem = true;
+                        for (int i = 0; i < systemListModel.getSize(); i++) {
+                            if (serverId == Integer.parseInt(systemListModel.get(i)[2])) {
+                                newSystem = false;
+                                break;
                             }
-                        };
-                        index = systemListModel.getSize();
-                        systemListModel.add(index, new String[] {"Server ("+serverId+")", "Available", Integer.toString(serverId)});
-                        requestTableModels.put(serverId, new Object[] {index, tableModel});
-                        updateStatusCount("", "Available");
+                        }
+                        if (newSystem) {
+                            tableModel = new DefaultTableModel(new String[] {"Request", "Client", "Iterations", "Deadline", "Status", "PI"}, 0) {
+                                @Override
+                                public Class getColumnClass(int column) {
+                                    return switch (column) {
+                                        case 4, 5 -> String.class;
+                                        default -> Integer.class;
+                                    };
+                                }
+                            };
+                            index = systemListModel.getSize();
+                            systemListModel.add(index, new String[] {"Server ("+serverId+")", "Available", Integer.toString(serverId)});
+                            requestTableModels.put(serverId, new Object[] {index, tableModel});
+                            updateStatusCount("", "Available");
+                        }
                         break;
                     case "UPDATE_SERVER_REQUEST":
                         serverId = (int) update[1];
@@ -158,17 +168,27 @@ public class GUI extends Thread{
                         break;
                     case "ADD_LOAD_BALANCER":
                         loadBalancerId = (int) update[1];
-                        boolean primary = (boolean) update[2];
-                        tableModel = new DefaultTableModel(new String[] {"Request", "Client", "Iterations", "Deadline"}, 0) {
-                            @Override
-                            public Class getColumnClass(int column) {
-                                return Integer.class;
+                        newSystem = true;
+                        for (int i = 0; i < systemListModel.getSize(); i++) {
+                            System.out.println(systemListModel.get(i)[2]);
+                            if (loadBalancerId == Integer.parseInt(systemListModel.get(i)[2])) {
+                                newSystem = false;
+                                break;
                             }
-                        };
-                        index = systemListModel.getSize();
-                        systemListModel.add(index, new String[] {"Load balancer"+(primary ? " (Main)" : ""), "Available", Integer.toString(loadBalancerId)});
-                        requestTableModels.put(loadBalancerId, new Object[] {index, tableModel});
-                        updateStatusCount("", "Available");
+                        }
+                        if (newSystem) {
+                            boolean primary = (boolean) update[2];
+                            tableModel = new DefaultTableModel(new String[] {"Request", "Client", "Iterations", "Deadline"}, 0) {
+                                @Override
+                                public Class getColumnClass(int column) {
+                                    return Integer.class;
+                                }
+                            };
+                            index = systemListModel.getSize();
+                            systemListModel.add(index, new String[] {"Load balancer"+(primary ? " (Main)" : ""), "Available", Integer.toString(loadBalancerId)});
+                            requestTableModels.put(loadBalancerId, new Object[] {index, tableModel});
+                            updateStatusCount("", "Available");
+                        }
                         break;
                     case "ADD_LOAD_BALANCER_REQUEST":
                         loadBalancerId = (int) update[1];
@@ -311,10 +331,12 @@ public class GUI extends Thread{
                 }
 
                 // Color rows based on a cell value
-                switch (getValueAt(row, 4).toString()) {
-                    case "Finished" -> component.setBackground(new Color(205, 233, 165));
-                    case "Pending" -> component.setBackground(new Color(253, 223, 155));
-                    case "Rejected" -> component.setBackground(new Color(253, 186, 186));
+                if (getColumnCount() > 4) {
+                    switch (getValueAt(row, 4).toString()) {
+                        case "Finished" -> component.setBackground(new Color(205, 233, 165));
+                        case "Pending" -> component.setBackground(new Color(253, 223, 155));
+                        case "Rejected" -> component.setBackground(new Color(253, 186, 186));
+                    }
                 }
 
                 return component;
