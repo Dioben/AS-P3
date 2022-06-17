@@ -125,6 +125,8 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
         awaitingDispatch.add(new Request(client,reqID,iter,deadline));
         rl.unlock();
         gui.addLoadBalancerRequest(loadBalancerId, reqID, client, iter, deadline);
+        if (content.isBlank())
+            return "";
         return content.substring(0,content.length()-1); //cut out last |
     }
 

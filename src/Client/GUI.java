@@ -91,7 +91,7 @@ public class GUI extends Thread{
                 for (int i = 0; i < requestTableModel.getRowCount(); i++) {
                     if (requestTableModel.getValueAt(i, 0).equals(update[0])) {
                         for (int col = 0; col < update.length; col++)
-                            if (update[col] != null)
+                            if (!(update[col] == null || (update[col] instanceof Integer && (int) update[col] == -1)))
                                 requestTableModel.setValueAt(update[col], i, col);
                         newRequest = false;
                         break;
