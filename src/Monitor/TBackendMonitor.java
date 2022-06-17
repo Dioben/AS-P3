@@ -121,9 +121,10 @@ public class TBackendMonitor extends  Thread{
             rl.unlock();
         }
         else if (request[0].equals("LBD")){
+            int id = Integer.parseInt(request[1]);
             int reqID = Integer.parseInt(request[2]);
             int serverID = Integer.parseInt(request[3]);
-            handler.notifyDispatched(serverID,reqID);
+            handler.notifyDispatched(id,serverID,reqID);
         }
         else if (request[0].equals("LBR")){
             rl.lock();

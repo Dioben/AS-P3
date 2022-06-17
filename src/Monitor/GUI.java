@@ -66,7 +66,6 @@ public class GUI extends Thread{
                 selfPortSpinner,
                 loadBalancerPortSpinner
         }) {
-            spinner.setValue(8000);
             ((DefaultFormatter) ((JFormattedTextField) spinner.getEditor().getComponent(0)).getFormatter()).setCommitsOnValidEdit(true);
             spinner.addChangeListener(e -> {
                 int port = (int) spinner.getValue();
@@ -77,6 +76,8 @@ public class GUI extends Thread{
                 }
             });
         }
+        selfPortSpinner.setValue(8000);
+        loadBalancerPortSpinner.setValue(8001);
 
         systemListModel = new DefaultListModel<>();
         systemList.setModel(systemListModel);
@@ -158,7 +159,7 @@ public class GUI extends Thread{
                             if (tableModel.getValueAt(i, 0).equals(requestId)) {
                                 for (int col = 2; col < update.length; col++)
                                     if (update[col] != null)
-                                        tableModel.setValueAt(update[col], i, col);
+                                        tableModel.setValueAt(update[col], i, col-2);
                                 newRequest = false;
                                 break;
                             }
@@ -198,9 +199,19 @@ public class GUI extends Thread{
                     case "REMOVE_LOAD_BALANCER_REQUEST":
                         loadBalancerId = (int) update[1];
                         requestId = (int) update[2];
+                        serverId = (int) update[3];
                         tableModel = (DefaultTableModel) requestTableModels.get(loadBalancerId)[1];
+                        DefaultTableModel serverTableModel = (DefaultTableModel) requestTableModels.get(serverId)[1];
                         for (int i = 0; i < tableModel.getRowCount(); i++) {
                             if (tableModel.getValueAt(i, 0).equals(requestId)) {
+                                serverTableModel.addRow(new Object[] {
+                                        tableModel.getValueAt(i, 0),
+                                        tableModel.getValueAt(i, 1),
+                                        tableModel.getValueAt(i, 2),
+                                        tableModel.getValueAt(i, 3),
+                                        "Pending",
+                                        null
+                                });
                                 tableModel.removeRow(i);
                                 break;
                             }
@@ -278,12 +289,13 @@ public class GUI extends Thread{
         }
     }
 
-    public void removeLoadBalancerRequest(int loadBalancerId, int requestId) {
+    public void removeLoadBalancerRequest(int loadBalancerId, int requestId, int serverId) {
         try {
             updates.put(new Object[] {
                     "REMOVE_LOAD_BALANCER_REQUEST",
                     loadBalancerId,
-                    requestId
+                    requestId,
+                    serverId
             });
         } catch (InterruptedException e) {
             e.printStackTrace();

@@ -127,8 +127,8 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
     }
 
     @Override
-    public void notifyDispatched(int port, int request){
-        gui.removeLoadBalancerRequest(port, request);
+    public void notifyDispatched(int loadBalancerId, int port, int request){
+        gui.removeLoadBalancerRequest(loadBalancerId, request, port);
         if (port==-1){
             notifyRefusedByLB(request);
             return;
@@ -172,7 +172,7 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
         rl.lock();
         List<Request> requests = awaitingResolution.get(port);
         for (int i =0;i<requests.size();i++)
-            if (awaitingDispatch.get(i).getReqID()==request){
+            if (requests.get(i).getReqID()==request){
                 requests.remove(i);
                 break;
             }

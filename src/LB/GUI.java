@@ -59,7 +59,6 @@ public class GUI extends Thread{
                 selfPortSpinner,
                 monitorPortSpinner
         }) {
-            spinner.setValue(8000);
             ((DefaultFormatter) ((JFormattedTextField) spinner.getEditor().getComponent(0)).getFormatter()).setCommitsOnValidEdit(true);
             spinner.addChangeListener(e -> {
                 int port = (int) spinner.getValue();
@@ -70,6 +69,8 @@ public class GUI extends Thread{
                 }
             });
         }
+        selfPortSpinner.setValue(8100);
+        monitorPortSpinner.setValue(8000);
 
         continueButton.addActionListener(e -> {
             if (watcherContact == null) {
