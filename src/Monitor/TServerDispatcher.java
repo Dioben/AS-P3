@@ -150,9 +150,8 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
                 awaitingResolution.get(port).add(r);
 
                 int newIter = servers.get(port) + r.getIter();
-                if (newIter <= 20)
-                    servers.put(port, newIter);
-                gui.changeStatus(port, servers.get(port) < 20 ? "Available" : "Full");
+                servers.put(port, newIter);
+                gui.changeStatus(port, newIter < 20 ? "Available" : "Full");
 
                 break;
             }
