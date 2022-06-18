@@ -5,6 +5,10 @@ import java.io.*;
 import java.net.Socket;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * Keeps up regular contact with monitor
+ * If this fails to regularly contact Monitor load balancer is unregistered
+ */
 public class TWatcherContact extends Thread implements IMonitorInfoContact {
     private final int ID;
     private final int watcherPort;
@@ -15,12 +19,21 @@ public class TWatcherContact extends Thread implements IMonitorInfoContact {
     private final GUI gui;
     private boolean isPrimary= false;
 
+    /**
+     *
+     * @param watcher Monitor port
+     * @param ID This entity's self assigned ID #TODO: SUSSY
+     * @param gui UI entity
+     */
     public TWatcherContact(int watcher, int ID, GUI gui) {
        watcherPort = watcher;
        this.ID = ID;
        this.gui = gui;
     }
 
+    /**
+     * Report to monitor every 5 seconds
+     */
     @Override
     public void run() {
         try {
@@ -39,6 +52,9 @@ public class TWatcherContact extends Thread implements IMonitorInfoContact {
         }
     }
 
+    /**
+     * Send plain heartbeat
+     */
     private void reportToMonitor() {
         rl.lock();
         String report = String.format("LB|%s",ID);
@@ -46,6 +62,11 @@ public class TWatcherContact extends Thread implements IMonitorInfoContact {
         rl.unlock();
     }
 
+    /**
+     * Request information about servers
+     * @param request Request we are registering with monitor
+     * @return Server Statuses
+     */
     public String requestStatusFromMonitor(String request) {
         if (!isPrimary){
             throw new RuntimeException("Should not be fetching info while not primary");
@@ -83,6 +104,11 @@ public class TWatcherContact extends Thread implements IMonitorInfoContact {
 
     }
 
+    /**
+     * Report a dispatch to monitor
+     * @param reqID Request ID
+     * @param serverID Server ID
+     */
     public void reportDispatchToMonitor(String reqID, int serverID) {
         gui.removeRequest(Integer.parseInt(reqID));
         rl.lock();
@@ -91,11 +117,18 @@ public class TWatcherContact extends Thread implements IMonitorInfoContact {
         rl.unlock();
     }
 
+    /**
+     * Report a cancelled request to monitor
+     * @param reqID Request ID
+     */
     @Override
     public void reportCancelToMonitor(String reqID) {
     reportDispatchToMonitor(reqID,-1);
     }
 
+    /**
+     * Report that process is ready to take over as primary
+     */
     @Override
     public void reportReady() {
         rl.lock();
@@ -104,7 +137,10 @@ public class TWatcherContact extends Thread implements IMonitorInfoContact {
         rl.unlock();
     }
 
-
+    /**
+     * Set self as a primary load balancer
+     * @param port
+     */
     private void setPrimary(int port) {
         if (isPrimary)
             throw new RuntimeException("Assigned Primary to same entity twice");
@@ -113,9 +149,18 @@ public class TWatcherContact extends Thread implements IMonitorInfoContact {
         gui.setSelfMain();
     }
 
+    /**
+     * Inner thread class that waits for a takeover event
+     */
     private class TWaitTakeover extends Thread{
         private final BufferedReader reader;
         private final TWatcherContact parent;
+
+        /**
+         *
+         * @param reader Data input
+         * @param parent Entity to declare as primary
+         */
         public TWaitTakeover(BufferedReader reader,TWatcherContact parent) {
             this.reader = reader;
             this.parent = parent;
