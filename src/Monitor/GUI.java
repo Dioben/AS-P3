@@ -171,7 +171,7 @@ public class GUI extends Thread{
                             }
                         }
                         if (newRequest)
-                            tableModel.addRow(Arrays.copyOfRange(update, 2, update.length));
+                            tableModel.insertRow(0, Arrays.copyOfRange(update, 2, update.length));
                         break;
                     case "ADD_LOAD_BALANCER":
                         loadBalancerId = (int) update[1];
@@ -200,7 +200,7 @@ public class GUI extends Thread{
                     case "ADD_LOAD_BALANCER_REQUEST":
                         loadBalancerId = (int) update[1];
                         tableModel = (DefaultTableModel) requestTableModels.get(loadBalancerId)[1];
-                        tableModel.addRow(Arrays.copyOfRange(update, 2, update.length));
+                        tableModel.insertRow(0, Arrays.copyOfRange(update, 2, update.length));
                         break;
                     case "REMOVE_LOAD_BALANCER_REQUEST":
                         loadBalancerId = (int) update[1];
@@ -210,7 +210,7 @@ public class GUI extends Thread{
                         DefaultTableModel serverTableModel = (DefaultTableModel) requestTableModels.get(serverId)[1];
                         for (int i = 0; i < tableModel.getRowCount(); i++) {
                             if (tableModel.getValueAt(i, 0).equals(requestId)) {
-                                serverTableModel.addRow(new Object[] {
+                                serverTableModel.insertRow(0, new Object[] {
                                         tableModel.getValueAt(i, 0),
                                         tableModel.getValueAt(i, 1),
                                         tableModel.getValueAt(i, 2),

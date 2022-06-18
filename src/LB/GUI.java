@@ -90,7 +90,7 @@ public class GUI extends Thread{
                 update = updates.take();
                 switch ((String) update[0]) {
                     case "ADD_REQUEST":
-                        requestTableModel.addRow(Arrays.copyOfRange(update, 1, update.length));
+                        requestTableModel.insertRow(0, Arrays.copyOfRange(update, 1, update.length));
                     case "REMOVE_REQUEST":
                         for (int i = 0; i < requestTableModel.getRowCount(); i++) {
                             if (requestTableModel.getValueAt(i, 0).equals(update[1])) {

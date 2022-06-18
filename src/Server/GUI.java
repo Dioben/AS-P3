@@ -90,7 +90,7 @@ public class GUI extends Thread{
                     }
                 }
                 if (newRequest)
-                    requestTableModel.addRow(update);
+                    requestTableModel.insertRow(0, update);
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
