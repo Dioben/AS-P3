@@ -1,5 +1,8 @@
 package Monitor;
 
+/**
+ * Data holder for load balancer info
+ */
 public class LoadBalancerHolder {
     private final int port;
     private final TBackendMonitor mngThread;

@@ -93,13 +93,13 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
     }
 
     @Override
-    public void removeLoadBalancer(int port){
+    public void removeLoadBalancer(int ID){
         LoadBalancerHolder hld = null;
         rl.lock();
         int currentSize = loadBalancers.size();
         for (int i = 0;i<currentSize;i++){
             LoadBalancerHolder lb = loadBalancers.get(i);
-            if (lb.getPort()==port){
+            if (lb.getPort()== ID){
                 loadBalancers.remove(i);
                 break;
             }
@@ -112,7 +112,7 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
             lbInitThread.start();
             gui.addLoadBalancer(hld.getPort(), true);
         }
-        gui.changeStatus(port, "Stopped");
+        gui.changeStatus(ID, "Stopped");
     }
 
     @Override

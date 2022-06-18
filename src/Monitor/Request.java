@@ -1,5 +1,8 @@
 package Monitor;
 
+/**
+ * Data holder for request info
+ */
 public class Request {
     private int client;
     private int reqID;
