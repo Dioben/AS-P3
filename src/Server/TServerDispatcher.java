@@ -5,6 +5,7 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -128,6 +129,7 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
                 QueuedRequest queued = waiting.get(i);
                 if (request.getDeadline()<queued.getDeadline() &&  (request.getPrecision()+complexityLoad-queued.getPrecision() ) <=MAX_COMPLEXITY ){
                     waiting.set(i, request);
+                    waiting.subList(i, waiting.size()).sort(Comparator.comparingInt(QueuedRequest::getDeadline).reversed());
                     refused++;
                     complexityLoad+= request.getPrecision()-queued.getPrecision();
                     rl.unlock();
