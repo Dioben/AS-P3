@@ -91,6 +91,7 @@ public class GUI extends Thread{
                 switch ((String) update[0]) {
                     case "ADD_REQUEST":
                         requestTableModel.insertRow(0, Arrays.copyOfRange(update, 1, update.length));
+                        break;
                     case "REMOVE_REQUEST":
                         for (int i = 0; i < requestTableModel.getRowCount(); i++) {
                             if (requestTableModel.getValueAt(i, 0).equals(update[1])) {
@@ -167,17 +168,7 @@ public class GUI extends Thread{
     }
 
     private void createUIComponents() {
-        requestTable = new JTable() {
-            @Override
-            public Component prepareRenderer(TableCellRenderer renderer, int row, int column) {
-                Component component = super.prepareRenderer(renderer, row, column);
-
-                TableColumn tableColumn = getColumnModel().getColumn(column);
-                tableColumn.setPreferredWidth(TABLE_WIDTH/4);
-
-                return component;
-            }
-        };
+        requestTable = new JTable();
         requestTableModel = new DefaultTableModel(new String[] {"Request", "Client", "Iterations", "Deadline"}, 0) {
             @Override
             public Class getColumnClass(int column) {
