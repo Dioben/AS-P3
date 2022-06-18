@@ -34,6 +34,13 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
 
     private GUI gui;
 
+    /**
+     * Instance a server
+     * Will also create and start a monitor reporting thread
+     * @param port Self port
+     * @param watcher Monitor Port
+     * @param gui UI entity
+     */
     public TServerDispatcher(int port, int watcher, GUI gui) {
         this.gui = gui;
         this.port = port;
@@ -41,6 +48,10 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
         watcherContact = new TWatcherContact(watcher,port,this, gui);
         watcherContact.start();
     }
+
+    /**
+     * Endless accept connections and launch assessors
+     */
     public void run() { // run socket thread creation indefinitely
         try {
             serverSocket = new ServerSocket(port);
@@ -55,7 +66,14 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
         }
     }
 
+    /**
+     * Register a new request<br>
+     * Request may be denied due to lacking capacity<br>
+     * Requests with smaller deadline values are prioritized
+     * @param request Request Data
+     */
     public void registerNewRequest(QueuedRequest request){
+        //reject overly large requests
         if (request.getPrecision()>13){
             reportRefusal(request);
             return;
@@ -63,20 +81,24 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
         gui.updateRequest(request.getRequestID(), request.getReturnPort(), request.getPrecision(), request.getDeadline(), "Pending", "");
         rl.lock();
 
+        //we have thread capacity to begin parsing right now
         if (threadsRunning<MAX_THREADS){
+            //we also have complexity handling capability
             if (complexityLoad+request.getPrecision()<=MAX_COMPLEXITY){
                 threadsRunning++;
                 complexityLoad+=request.getPrecision();
                 rl.unlock();
-                new TSolver(request,this,port).start();
+                new TSolver(request,this).start();
             }else{
                 refused++;
                 rl.unlock();
                 reportRefusal(request);
             }
+            return;
 
-
+            //we cant run right now but have space to schedule it for later
         }else if( waiting.size() <MAX_PENDING){
+            //as long as it isnt too complex
             if (complexityLoad+request.getPrecision()<=MAX_COMPLEXITY){
                 //keep pending sorted
                 int size = waiting.size();
@@ -99,8 +121,9 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
                 rl.unlock();
                 reportRefusal(request);
             }
+            return;
         }
-        else{ //one of the pending requests may be swapped out, keep complexity load maximum and scheduling policy in mind
+        else{ //one of the pending requests may be swapped out if it has higher deadline and complexity limit isnt passed
             for(int i = 0;i<MAX_PENDING;i++){
                 QueuedRequest queued = waiting.get(i);
                 if (request.getDeadline()<queued.getDeadline() &&  (request.getPrecision()+complexityLoad-queued.getPrecision() ) <=MAX_COMPLEXITY ){
@@ -109,18 +132,25 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
                     complexityLoad+= request.getPrecision()-queued.getPrecision();
                     rl.unlock();
                     reportRefusal(queued);
-                    break;
+                    return;
                 }
                 if (i==MAX_PENDING-1){
                     refused++;
                     rl.unlock();
                     reportRefusal(request);
+                    return;
                 }
             }
 
         }
     }
 
+    /**
+     * Report request result
+     * Lowers current load stats and possibly launches new thread
+     * @param request Request Object that has been parsed
+     * @param result Parsing result
+     */
     public void onRequestCompletion(QueuedRequest request,String result){
 
         rl.lock();
@@ -129,7 +159,7 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
         if (waiting.size()>0){
             QueuedRequest next = waiting.remove(0);
             rl.unlock();
-            new TSolver(next,this,port).start();
+            new TSolver(next,this).start();
         }else{
          threadsRunning--;
          rl.unlock();
@@ -138,6 +168,11 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
 
     }
 
+    /**
+     * Report a result to monitor and client
+     * @param request Request Object
+     * @param result Request result
+     */
     private void reportResult(QueuedRequest request, String result){
         gui.updateRequest(request.getRequestID(), request.getReturnPort(), request.getPrecision(), request.getDeadline(), "Finished", result);
         try {
@@ -154,7 +189,10 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
         } catch (IOException e) {}
         watcherContact.reportSuccessToMonitor(request);
     }
-
+    /**
+     * Report a refusal to monitor and client
+     * @param request Request Object
+     */
     private void reportRefusal(QueuedRequest request){
         gui.updateRequest(request.getRequestID(), request.getReturnPort(), request.getPrecision(), request.getDeadline(), "Rejected", "");
         try {
@@ -171,6 +209,10 @@ public class TServerDispatcher extends Thread implements IRequestCompleted, IReq
         watcherContact.reportRejectionToMonitor(request);
     }
 
+    /**
+     * Get current status in int[2] format
+     * @return {entities, total complexity}
+     */
     @Override
     public int[] getStatus() {
         rl.lock();

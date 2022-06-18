@@ -4,15 +4,26 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.Socket;
 
+/**
+ * Class responsible for parsing new requests and attempting to register them
+ */
 public class TCommsAssessor extends Thread{
     private final Socket comms;
     private final IRequestParsed parent;
 
+    /**
+     *
+     * @param accept Socket data will be received from
+     * @param parent Entity to report request to
+     */
     public TCommsAssessor(Socket accept, IRequestParsed parent) {
         comms = accept;
         this.parent = parent;
     }
 
+    /**
+     * Attempt to read a request and then register it
+     */
     @Override
     public void run() {
         QueuedRequest request = null;
