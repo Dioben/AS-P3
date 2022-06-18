@@ -207,16 +207,18 @@ public class GUI extends Thread{
                         requestId = (int) update[2];
                         serverId = (int) update[3];
                         tableModel = (DefaultTableModel) requestTableModels.get(loadBalancerId)[1];
-                        DefaultTableModel serverTableModel = (DefaultTableModel) requestTableModels.get(serverId)[1];
                         for (int i = 0; i < tableModel.getRowCount(); i++) {
                             if (tableModel.getValueAt(i, 0).equals(requestId)) {
-                                serverTableModel.insertRow(0, new Object[] {
-                                        tableModel.getValueAt(i, 0),
-                                        tableModel.getValueAt(i, 1),
-                                        tableModel.getValueAt(i, 2),
-                                        tableModel.getValueAt(i, 3),
-                                        "Pending"
-                                });
+                                if (serverId != -1) {
+                                    DefaultTableModel serverTableModel = (DefaultTableModel) requestTableModels.get(serverId)[1];
+                                    serverTableModel.insertRow(0, new Object[] {
+                                            tableModel.getValueAt(i, 0),
+                                            tableModel.getValueAt(i, 1),
+                                            tableModel.getValueAt(i, 2),
+                                            tableModel.getValueAt(i, 3),
+                                            "Pending"
+                                    });
+                                }
                                 tableModel.removeRow(i);
                                 break;
                             }
@@ -331,7 +333,12 @@ public class GUI extends Thread{
         requestTable = new JTable() {
             @Override
             public Component prepareRenderer(TableCellRenderer renderer, int row, int column) {
-                Component component = super.prepareRenderer(renderer, row, column);
+                Component component;
+                try {
+                    component = super.prepareRenderer(renderer, row, column);
+                } catch (ArrayIndexOutOfBoundsException ignored) {
+                    return null;
+                }
 
                 // Set minimum width for the PI column
                 if (column == 5) {
