@@ -6,15 +6,26 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
+/**
+ * Entity responsible for mapping a request onto a server
+ */
 public class TCommsDirector extends Thread{
     private final Socket comms;
     private final IMonitorInfoContact src;
 
+    /**
+     *
+     * @param accept socket we receive data from
+     * @param provider entity that keeps up contact with monitor
+     */
     public TCommsDirector(Socket accept, IMonitorInfoContact provider) {
         comms = accept;
         this.src = provider;
     }
 
+    /**
+     * Parse and assign request
+     */
     @Override
     public void run() {
         String inputLine = null;
@@ -56,6 +67,11 @@ public class TCommsDirector extends Thread{
 
     }
 
+    /**
+     * Parse request list to find optimal server
+     * @param statuses Server ports and loads
+     * @return Optimal contact port
+     */
     private int getOptimalServer(String statuses) {
     String[] input = statuses.split("\\|");
     int best = 21; //max is 20 anyway
