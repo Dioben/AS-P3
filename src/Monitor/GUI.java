@@ -8,8 +8,7 @@ import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 import javax.swing.text.DefaultFormatter;
 import java.awt.*;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -106,7 +105,10 @@ public class GUI extends Thread{
         });
 
         systemList.addListSelectionListener(e -> {
-            int serverId = Integer.parseInt(systemListModel.get(((JList<?>) e.getSource()).getMinSelectionIndex())[2]);
+            int index = ((JList<?>) e.getSource()).getMinSelectionIndex();
+            if (index < 0)
+                return;
+            int serverId = Integer.parseInt(systemListModel.get(index)[2]);
             DefaultTableModel tableModel = (DefaultTableModel) requestTableModels.get(serverId)[1];
             requestTable.setModel(tableModel);
 
@@ -154,6 +156,7 @@ public class GUI extends Thread{
                             systemListModel.add(index, new String[] {"Server ("+serverId+")", "Available", Integer.toString(serverId)});
                             requestTableModels.put(serverId, new Object[] {index, tableModel});
                         }
+                        sortSystemList();
                         updateStatusCount();
                         break;
                     case "UPDATE_SERVER_REQUEST":
@@ -195,6 +198,7 @@ public class GUI extends Thread{
                             systemListModel.add(index, new String[] {"Load balancer ("+Math.abs(loadBalancerId)+")"+(primary ? " (Main)" : ""), "Available", Integer.toString(loadBalancerId)});
                             requestTableModels.put(loadBalancerId, new Object[] {index, tableModel});
                         }
+                        sortSystemList();
                         updateStatusCount();
                         break;
                     case "ADD_LOAD_BALANCER_REQUEST":
@@ -230,6 +234,7 @@ public class GUI extends Thread{
                         String[] listElement = systemListModel.get(listIndex);
                         listElement[1] = (String) update[2];
                         systemListModel.set(listIndex, listElement);
+                        sortSystemList();
                         updateStatusCount();
                         break;
                 }
@@ -380,6 +385,31 @@ public class GUI extends Thread{
         availableSystemCountLabel.setText(Integer.toString(available));
         fullSystemCountLabel.setText(Integer.toString(full));
         stoppedSystemCountLabel.setText(Integer.toString(stopped));
+    }
+
+    private void sortSystemList() {
+        int index = systemList.getMinSelectionIndex();
+        if (index < 0)
+            return;
+        ArrayList<String[]> list = Collections.list(systemListModel.elements());
+        list.sort((x, y) -> {
+            if (Objects.equals(x[1], "Stopped") && !Objects.equals(y[1], "Stopped")) {
+                return 1;
+            }
+            if (!Objects.equals(x[1], "Stopped") && Objects.equals(y[1], "Stopped")) {
+                return -1;
+            }
+            return 0;
+        });
+        int selectedId = Integer.parseInt(systemListModel.get(index)[2]);
+        for (int i = 0; i < list.size(); i++) {
+            String[] system = list.get(i);
+            int currentId = Integer.parseInt(system[2]);
+            systemListModel.set(i, system);
+            requestTableModels.get(currentId)[0] = i;
+            if (currentId == selectedId)
+                systemList.setSelectedIndex(i);
+        }
     }
 
     public static void setGUILook(String[] wantedLooks) {
