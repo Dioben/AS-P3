@@ -107,6 +107,8 @@ public class GUI extends Thread {
                 }
                 if (newRequest)
                     requestTableModel.insertRow(0, update);
+                requestTable.repaint();
+                requestTable.revalidate();
             }
         } catch (InterruptedException e) {
             e.printStackTrace();

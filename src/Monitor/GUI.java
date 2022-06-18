@@ -191,6 +191,8 @@ public class GUI extends Thread {
                         }
                         if (newRequest)
                             tableModel.insertRow(0, Arrays.copyOfRange(update, 2, update.length));
+                        requestTable.repaint();
+                        requestTable.revalidate();
                         break;
                     case "ADD_LOAD_BALANCER":
                         loadBalancerId = (int) update[1];
@@ -456,9 +458,6 @@ public class GUI extends Thread {
      * Sorts the system list so the stopped systems go to the bottom
      */
     private void sortSystemList() {
-        int index = systemList.getMinSelectionIndex();
-        if (index < 0)
-            return;
         ArrayList<String[]> list = Collections.list(systemListModel.elements());
         list.sort((x, y) -> {
             if (Objects.equals(x[1], "Stopped") && !Objects.equals(y[1], "Stopped")) {
@@ -469,7 +468,8 @@ public class GUI extends Thread {
             }
             return 0;
         });
-        int selectedId = Integer.parseInt(systemListModel.get(index)[2]);
+        int index = systemList.getMinSelectionIndex();
+        int selectedId = (index < 0) ? 0 : Integer.parseInt(systemListModel.get(index)[2]);
         for (int i = 0; i < list.size(); i++) {
             String[] system = list.get(i);
             int currentId = Integer.parseInt(system[2]);
