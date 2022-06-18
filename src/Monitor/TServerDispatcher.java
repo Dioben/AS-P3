@@ -146,7 +146,13 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
                     awaitingResolution.put(port,new ArrayList<>());
                 }
 
-                awaitingResolution.get(port).add(awaitingDispatch.remove(i)); //move this from await dispatch to await resolution
+                Request r = awaitingDispatch.remove(i);
+                awaitingResolution.get(port).add(r);
+
+                int newIter = servers.get(port) + r.getIter();
+                servers.put(port, newIter);
+                gui.changeStatus(port, newIter < 20 ? "Available" : "Full");
+
                 break;
             }
         rl.unlock();

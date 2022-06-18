@@ -41,13 +41,13 @@ public class TCommsDirector extends Thread{
         int port = getOptimalServer(statuses);
         if (port!=-1){
             try{
+                String[] split = inputLine.split("\\|");
+                src.reportDispatchToMonitor(split[1],port);
                 Socket redirect = new Socket("localhost",port);
                 PrintWriter out = new PrintWriter(redirect.getOutputStream(), true);
                 out.println(inputLine);
                 redirect.close();
                 out.close();
-                String[] split = inputLine.split("\\|");
-                src.reportDispatchToMonitor(split[1],port);
             } catch (Exception e) {}
         }else{
             try{
