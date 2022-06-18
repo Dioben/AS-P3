@@ -9,6 +9,10 @@ import java.net.Socket;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * Class that reads new connections and handles servers and load balancers<br>
+ * Can time out when information does not come in for too long
+ */
 public class TBackendMonitor extends  Thread{
     private static final int SOCKET_TIMEOUT = 11000;
     private final Socket comms;
@@ -20,6 +24,11 @@ public class TBackendMonitor extends  Thread{
     private boolean isLoadBalancer = false;
     private boolean activatedPrimary = false;
 
+    /**
+     *
+     * @param accept connection data is received on
+     * @param tServerDispatcher Origin of server or load balancer handler
+     */
     public TBackendMonitor(Socket accept, IHandlerSource tServerDispatcher) {
         comms = accept;
         parent = tServerDispatcher;
@@ -43,6 +52,12 @@ public class TBackendMonitor extends  Thread{
         }
     }
 
+    /**
+     * Parse server info requests on a loop<br>
+     * Can time out
+     * @param handler Server method container
+     * @param request First received request
+     */
     private void handleServer(IServerHandler handler, String request){
         int port = Integer.parseInt(request.split("\\|")[1]);
         parseServerInput(handler,request);
@@ -63,6 +78,13 @@ public class TBackendMonitor extends  Thread{
         }
     }
 
+    /**
+     * Parse LB info requests on a loop<br>
+     * Can time out
+     * Can be rejected if overly full
+     * @param handler LB method container
+     * @param request First received request
+     */
     private void handleLoadBalancer(ILoadBalancerHandler handler, String request) {
         isLoadBalancer = true;
         if (!request.startsWith("LB|")) //basic keepalive rather than advanced message
@@ -134,6 +156,11 @@ public class TBackendMonitor extends  Thread{
         }
     }
 
+    /**
+     * Shift load balancer into primary mode<br>
+     * This operation is blocking so that no data is sent to primary before it is ready
+     * @param port Port that LB takes over on
+     */
     public void shiftToPrimaryLoadBalancer(int port){
         if (!isLoadBalancer)
             throw new RuntimeException("Takeover called for something that is not a load balancer");
