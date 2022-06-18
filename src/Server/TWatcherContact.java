@@ -4,6 +4,10 @@ import java.io.*;
 import java.net.Socket;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * Entity responsible for keeping up contact with the watcher thread
+ * Sends periodic updates, if this mechanism fails the server is unregistered
+ */
 public class TWatcherContact extends Thread{
     private final int ID;
     private final int watcherPort;
@@ -19,6 +23,9 @@ public class TWatcherContact extends Thread{
        this.gui = gui;
     }
 
+    /**
+     * Connect to monitor and send updates every 5 seconds
+     */
     @Override
     public void run() {
         try {
@@ -37,6 +44,9 @@ public class TWatcherContact extends Thread{
         }
     }
 
+    /**
+     * Report existence and current load stats to monitor
+     */
     private void reportToMonitor() {
         rl.lock();
         int[] info = provider.getStatus();
@@ -45,6 +55,10 @@ public class TWatcherContact extends Thread{
         rl.unlock();
     }
 
+    /**
+     * Report request success to a monitor including current load status
+     * @param request Completed request
+     */
     public void reportSuccessToMonitor(QueuedRequest request) {
         rl.lock();
         int[] info = provider.getStatus();
@@ -53,6 +67,10 @@ public class TWatcherContact extends Thread{
         rl.unlock();
     }
 
+    /**
+     * Report request rejection to monitor
+     * @param request Rejected Request
+     */
     public void reportRejectionToMonitor(QueuedRequest request) {
         rl.lock();
         int[] info = provider.getStatus();

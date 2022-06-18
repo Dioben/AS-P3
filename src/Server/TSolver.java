@@ -1,16 +1,27 @@
 package Server;
 
+/**
+ * Entity responsible for calculating PI up to x decimal places
+ */
 public class TSolver extends Thread{
     private final static String PI = "3.1415926589793";
     private final QueuedRequest request;
     private final IRequestCompleted parent;
-    private final int ID;
 
-    public TSolver(QueuedRequest request, IRequestCompleted reportTo, int id){
+
+    /**
+     *
+     * @param request Request to handle
+     * @param reportTo Entity to report result to
+     */
+    public TSolver(QueuedRequest request, IRequestCompleted reportTo){
         this.request = request;
         parent = reportTo;
-        ID = id;
     }
+
+    /**
+     * Compute result, actually a big wait in a trench coat
+     */
     @Override
     public void run() {
 
