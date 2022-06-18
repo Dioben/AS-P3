@@ -16,6 +16,9 @@ import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+/**
+ * Class responsible for handling the graphical interface
+ */
 public class GUI extends Thread {
 
     private TServerDispatcher serverDispatcher;
@@ -49,6 +52,11 @@ public class GUI extends Thread {
     private JLabel fullSystemCountXLabel;
     private JLabel stoppedSystemCountXLabel;
 
+    /**
+     * Constructor for GUI class<br>
+     * Initializes the frame and variables<br>
+     * Also modifies swing components
+     */
     public GUI() {
         $$$setupUI$$$();
         frame = new JFrame(TITLE);
@@ -123,6 +131,9 @@ public class GUI extends Thread {
         });
     }
 
+    /**
+     * Makes the GUI start listening for update requests and updates the UI
+     */
     public void run() {
         frame.setVisible(true);
         Object[] update;
@@ -249,6 +260,10 @@ public class GUI extends Thread {
         }
     }
 
+    /**
+     * Adds a server to the system list
+     * @param serverId ID of the server
+     */
     public void addServer(int serverId) {
         try {
             updates.put(new Object[]{
@@ -260,6 +275,16 @@ public class GUI extends Thread {
         }
     }
 
+    /**
+     * Updates a request on a server's request table<br>
+     * Can also add a request
+     * @param serverId ID of the server
+     * @param requestId ID of the request
+     * @param clientId ID of the client that sent the request
+     * @param iterations number of iterations/precision of PI
+     * @param deadline arbitrary value that defines request priority
+     * @param status status of the request
+     */
     public void updateServerRequest(int serverId, int requestId, Integer clientId, Integer iterations, Integer deadline, String status) {
         try {
             updates.put(new Object[]{
@@ -276,6 +301,11 @@ public class GUI extends Thread {
         }
     }
 
+    /**
+     * Adds a load balancer to the system list
+     * @param loadBalancerId ID of the load balancer
+     * @param primary if this load balancer is primary
+     */
     public void addLoadBalancer(int loadBalancerId, boolean primary) {
         try {
             updates.put(new Object[]{
@@ -288,6 +318,14 @@ public class GUI extends Thread {
         }
     }
 
+    /**
+     * Adds a request to a load balancer's request table
+     * @param loadBalancerId ID of the load balancer
+     * @param requestId ID of the request
+     * @param clientId ID of the client that sent the request
+     * @param iterations number of iterations/precision of PI
+     * @param deadline arbitrary value that defines request priority
+     */
     public void addLoadBalancerRequest(int loadBalancerId, int requestId, int clientId, int iterations, int deadline) {
         try {
             updates.put(new Object[]{
@@ -303,6 +341,12 @@ public class GUI extends Thread {
         }
     }
 
+    /**
+     * Removes a request from a load balancer's request table
+     * @param loadBalancerId ID of the load balancer
+     * @param requestId ID of the request
+     * @param serverId ID of the server the request was sent to (-1 if rejected)
+     */
     public void removeLoadBalancerRequest(int loadBalancerId, int requestId, int serverId) {
         try {
             updates.put(new Object[]{
@@ -316,6 +360,11 @@ public class GUI extends Thread {
         }
     }
 
+    /**
+     * Change the status of a system
+     * @param id ID of the system (server or load balancer)
+     * @param status "Available", "Full", "Stopped"
+     */
     public void changeStatus(int id, String status) {
         try {
             updates.put(new Object[]{
@@ -328,6 +377,11 @@ public class GUI extends Thread {
         }
     }
 
+    /**
+     * Used to make sure the self port is valid<br>
+     * If so, go to the main page
+     * @param valid if the self port is valid
+     */
     public void setSelfPortValidity(boolean valid) {
         if (!valid) {
             serverDispatcher.interrupt();
@@ -339,6 +393,9 @@ public class GUI extends Thread {
         }
     }
 
+    /**
+     * Used to create a more customizable request table
+     */
     private void createUIComponents() {
         requestTable = new JTable() {
             @Override
@@ -376,6 +433,9 @@ public class GUI extends Thread {
         requestTable.getTableHeader().setReorderingAllowed(false);
     }
 
+    /**
+     * Updates the count of how many systems are available, full, or stopped
+     */
     private void updateStatusCount() {
         int available = 0;
         int full = 0;
@@ -392,6 +452,9 @@ public class GUI extends Thread {
         stoppedSystemCountLabel.setText(Integer.toString(stopped));
     }
 
+    /**
+     * Sorts the system list so the stopped systems go to the bottom
+     */
     private void sortSystemList() {
         int index = systemList.getMinSelectionIndex();
         if (index < 0)
@@ -417,6 +480,12 @@ public class GUI extends Thread {
         }
     }
 
+    /**
+     * Changes the theme of the UI window<br>
+     * If computer doesn't have any of the themes provided, the computer's default
+     * one will be used
+     * @param wantedLooks list of theme names
+     */
     public static void setGUILook(String[] wantedLooks) {
         UIManager.LookAndFeelInfo[] looks = UIManager.getInstalledLookAndFeels();
         String chosenLook = null;
@@ -440,10 +509,8 @@ public class GUI extends Thread {
 
     /**
      * Method generated by IntelliJ IDEA GUI Designer
-     * >>> IMPORTANT!! <<<
+     * !!! IMPORTANT!! !!!
      * DO NOT edit this method OR call it in your code!
-     *
-     * @noinspection ALL
      */
     private void $$$setupUI$$$() {
         createUIComponents();
@@ -623,17 +690,26 @@ public class GUI extends Thread {
     }
 
     /**
-     * @noinspection ALL
+     * Method generated by IntelliJ IDEA GUI Designer
+     * !!! IMPORTANT!! !!!
+     * DO NOT edit this method OR call it in your code!
      */
     public JComponent $$$getRootComponent$$$() {
         return mainPanel;
     }
 
+    /**
+     * Custom renderer for the system list
+     */
     private static class CustomListCellRenderer extends JPanel implements ListCellRenderer<String[]> {
 
         JLabel nameLabel = new JLabel();
         JLabel statusLabel = new JLabel();
 
+        /**
+         * Constructor of the custom renderer<br>
+         * Starts defining the custom look of the system list elements
+         */
         public CustomListCellRenderer() {
             setLayout(new BorderLayout());
             add(nameLabel, BorderLayout.WEST);
@@ -641,6 +717,15 @@ public class GUI extends Thread {
             setBorder(new EmptyBorder(4, 8, 6, 8));
         }
 
+        /**
+         * Defines the custom look of the system list elements
+         * @param list system list
+         * @param value the values in each list element
+         * @param index index of the element
+         * @param isSelected if the element is selected
+         * @param cellHasFocus if the element has focus
+         * @return the custom renderer with the custom look
+         */
         @Override
         public Component getListCellRendererComponent(JList<? extends String[]> list, String[] value, int index, boolean isSelected, boolean cellHasFocus) {
             nameLabel.setText(value[0]);
