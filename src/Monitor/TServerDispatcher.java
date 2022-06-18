@@ -54,6 +54,7 @@ public class TServerDispatcher extends Thread implements ILoadBalancerHandler, I
         servers.put(port,complexityLoad);
         rl.unlock();
         gui.addServer(port);
+        gui.changeStatus(port, complexityLoad < 20 ? "Available" : "Full");
     }
     @Override
     public void removeServer(int port){

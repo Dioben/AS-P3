@@ -153,8 +153,8 @@ public class GUI extends Thread{
                             index = systemListModel.getSize();
                             systemListModel.add(index, new String[] {"Server ("+serverId+")", "Available", Integer.toString(serverId)});
                             requestTableModels.put(serverId, new Object[] {index, tableModel});
-                            updateStatusCount("", "Available");
                         }
+                        updateStatusCount();
                         break;
                     case "UPDATE_SERVER_REQUEST":
                         serverId = (int) update[1];
@@ -194,8 +194,8 @@ public class GUI extends Thread{
                             index = systemListModel.getSize();
                             systemListModel.add(index, new String[] {"Load balancer ("+Math.abs(loadBalancerId)+")"+(primary ? " (Main)" : ""), "Available", Integer.toString(loadBalancerId)});
                             requestTableModels.put(loadBalancerId, new Object[] {index, tableModel});
-                            updateStatusCount("", "Available");
                         }
+                        updateStatusCount();
                         break;
                     case "ADD_LOAD_BALANCER_REQUEST":
                         loadBalancerId = (int) update[1];
@@ -224,13 +224,11 @@ public class GUI extends Thread{
                         break;
                     case "CHANGE_STATUS":
                         int id = (int) update[1];
-                        String newStatus = (String) update[2];
                         int listIndex = (Integer) requestTableModels.get(id)[0];
                         String[] listElement = systemListModel.get(listIndex);
-                        String oldStatus = listElement[1];
-                        listElement[1] = newStatus;
+                        listElement[1] = (String) update[2];
                         systemListModel.set(listIndex, listElement);
-                        updateStatusCount(oldStatus, newStatus);
+                        updateStatusCount();
                         break;
                 }
             }
@@ -361,29 +359,20 @@ public class GUI extends Thread{
         requestTable.getTableHeader().setReorderingAllowed(false);
     }
 
-    private void updateStatusCount(String removed, String added) {
-        switch (removed) {
-            case "Available":
-                availableSystemCountLabel.setText(Integer.toString(Integer.parseInt(availableSystemCountLabel.getText())-1));
-                break;
-            case "Full":
-                fullSystemCountLabel.setText(Integer.toString(Integer.parseInt(fullSystemCountLabel.getText())-1));
-                break;
-            case "Stopped":
-                stoppedSystemCountLabel.setText(Integer.toString(Integer.parseInt(stoppedSystemCountLabel.getText())-1));
-                break;
+    private void updateStatusCount() {
+        int available = 0;
+        int full = 0;
+        int stopped = 0;
+        for (int i = 0; i < systemListModel.getSize(); i++) {
+            switch (systemListModel.get(i)[1]) {
+                case "Available" -> available++;
+                case "Full" -> full++;
+                case "Stopped" -> stopped++;
+            }
         }
-        switch (added) {
-            case "Available":
-                availableSystemCountLabel.setText(Integer.toString(Integer.parseInt(availableSystemCountLabel.getText())+1));
-                break;
-            case "Full":
-                fullSystemCountLabel.setText(Integer.toString(Integer.parseInt(fullSystemCountLabel.getText())+1));
-                break;
-            case "Stopped":
-                stoppedSystemCountLabel.setText(Integer.toString(Integer.parseInt(stoppedSystemCountLabel.getText())+1));
-                break;
-        }
+        availableSystemCountLabel.setText(Integer.toString(available));
+        fullSystemCountLabel.setText(Integer.toString(full));
+        stoppedSystemCountLabel.setText(Integer.toString(stopped));
     }
 
     public static void setGUILook(String[] wantedLooks) {
